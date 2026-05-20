@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: chai-stock-manager
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python3 stock_server.py
+    envVars:
+      - key: PYTHONIOENCODING
+        value: utf-8
+      - key: LANG
+        value: zh_TW.UTF-8
+      - key: LC_ALL
+        value: zh_TW.UTF-8

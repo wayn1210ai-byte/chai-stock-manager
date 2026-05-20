@@ -1,0 +1,1103 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Moneywalk</title>
+    <meta
+      name="description"
+      content="Moneywalk - 可愛粉色系步行賺錢 App，單檔 HTML 版本。"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=Noto+Sans+TC:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /*
+        Moneywalk Design Direction (chosen after brainstorming)
+        Approach: Kawaii Sticker Scrapbook × Japanese mobile app
+        Design movement: 貼紙手帳感 + 軟萌遊戲 UI
+        Core principles: 超圓角、糖果層次、卡片像貼紙、互動要有彈跳感
+        Color philosophy: 以 #FFB5C2 為主體，搭配 #FFF0F3 與 #FFD1DC 做出柔軟、療癒、甜點般的層次
+        Signature elements: 🐕🐾 貼紙裝飾、奶油光澤、果凍陰影、波浪導航
+      */
+
+      :root {
+        --pink: #ffb5c2;
+        --pink-deep: #ff89a6;
+        --pink-soft: #ffd7e1;
+        --cream: #fff0f3;
+        --peach: #ffd1dc;
+        --peach-deep: #ffb9c8;
+        --text: #7a4355;
+        --text-soft: #a05f74;
+        --white: rgba(255, 255, 255, 0.88);
+        --shadow: 0 18px 40px rgba(210, 118, 146, 0.22);
+        --shadow-soft: 0 10px 24px rgba(210, 118, 146, 0.14);
+        --border: rgba(255, 255, 255, 0.82);
+        --success: #ff9fb3;
+        --gold: #ffd86b;
+        --silver: #d8dff4;
+        --bronze: #f2b99d;
+      }
+
+      * { box-sizing: border-box; }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        font-family: "M PLUS Rounded 1c", "Noto Sans TC", sans-serif;
+        background:
+          radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.5), transparent 28%),
+          radial-gradient(circle at 85% 12%, rgba(255, 240, 243, 0.9), transparent 24%),
+          radial-gradient(circle at 30% 80%, rgba(255, 209, 220, 0.65), transparent 30%),
+          linear-gradient(180deg, #ffdfe7 0%, #ffc8d5 45%, #fff0f3 100%);
+        color: var(--text);
+      }
+
+      body {
+        display: flex;
+        justify-content: center;
+        padding: 18px;
+      }
+
+      button,
+      input { font: inherit; }
+
+      .app-shell {
+        width: 100%;
+        max-width: 430px;
+        min-height: calc(100vh - 36px);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.18));
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 36px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .app-shell::before,
+      .app-shell::after {
+        content: "🐾";
+        position: absolute;
+        font-size: 24px;
+        opacity: 0.22;
+        animation: floaty 5s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      .app-shell::before { top: 22px; right: 18px; }
+      .app-shell::after { bottom: 100px; left: 14px; animation-delay: -2.2s; }
+
+      .screen {
+        padding: 22px 18px 110px;
+        min-height: calc(100vh - 36px);
+        display: none;
+      }
+
+      .screen.active {
+        display: block;
+        animation: popIn 0.45s ease;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .bubble,
+      .mini-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        box-shadow: var(--shadow-soft);
+        color: var(--text-soft);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .hero-card,
+      .panel,
+      .stat-card,
+      .action-btn,
+      .podium-card,
+      .history-item,
+      .leader-item,
+      .invite-card,
+      .quick-btn,
+      .submit-btn,
+      .wallet-balance,
+      .overview-bar-wrap {
+        border-radius: 28px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,240,243,0.88));
+        box-shadow: var(--shadow-soft);
+      }
+
+      .hero-card {
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 16px;
+      }
+
+      .hero-card::after {
+        content: "🐕";
+        position: absolute;
+        right: 18px;
+        bottom: 10px;
+        font-size: 76px;
+        opacity: 0.12;
+        transform: rotate(-8deg);
+      }
+
+      h1, h2, h3, p { margin: 0; }
+
+      .hero-title {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        margin-top: 10px;
+      }
+
+      .hero-sub {
+        margin-top: 8px;
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--text-soft);
+        max-width: 80%;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 18px 2px 12px;
+      }
+
+      .section-title h2 { font-size: 18px; font-weight: 800; }
+      .section-title span { font-size: 12px; color: var(--text-soft); }
+
+      .stats-grid,
+      .wallet-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .stat-card {
+        padding: 14px 12px;
+        min-height: 102px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .stat-card::before {
+        content: "";
+        position: absolute;
+        inset: auto -16px -30px auto;
+        width: 74px;
+        height: 74px;
+        background: radial-gradient(circle, rgba(255, 181, 194, 0.36), transparent 70%);
+      }
+
+      .stat-label { font-size: 12px; color: var(--text-soft); font-weight: 700; }
+      .stat-value { font-size: 24px; font-weight: 800; line-height: 1; }
+      .stat-note { font-size: 12px; color: var(--pink-deep); font-weight: 700; }
+
+      .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .action-btn,
+      .quick-btn,
+      .submit-btn,
+      .nav-btn {
+        border: none;
+        cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.2s ease;
+      }
+
+      .action-btn:hover,
+      .quick-btn:hover,
+      .submit-btn:hover,
+      .nav-btn:hover,
+      .action-btn:active,
+      .quick-btn:active,
+      .submit-btn:active,
+      .nav-btn:active { transform: translateY(-2px) scale(1.01); }
+
+      .action-btn {
+        padding: 14px 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        color: var(--text);
+      }
+
+      .action-emoji {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        border-radius: 18px;
+        background: linear-gradient(180deg, #ffdbe4, #fff3f5);
+        font-size: 22px;
+        box-shadow: inset 0 3px 8px rgba(255,255,255,0.6);
+      }
+
+      .action-text { font-size: 13px; font-weight: 700; }
+      .panel { padding: 16px; }
+
+      .overview-bars {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        align-items: end;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .overview-day {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .overview-bar-wrap {
+        width: 100%;
+        height: 112px;
+        display: flex;
+        align-items: end;
+        padding: 8px;
+        border-radius: 22px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,209,220,0.55));
+      }
+
+      .overview-bar {
+        width: 100%;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #ff94aa, #ffb9c8 58%, #ffd1dc 100%);
+        box-shadow: inset 0 -4px 10px rgba(255,255,255,0.35);
+        animation: riseUp 0.8s ease both;
+      }
+
+      .overview-label { font-size: 11px; color: var(--text-soft); font-weight: 700; }
+      .overview-value { font-size: 10px; color: var(--pink-deep); font-weight: 800; }
+
+      .input-card { padding: 18px; }
+      .step-input-wrap { position: relative; margin-top: 14px; }
+
+      .step-input {
+        width: 100%;
+        border: 2px solid rgba(255, 181, 194, 0.55);
+        background: rgba(255,255,255,0.82);
+        border-radius: 24px;
+        padding: 18px 16px;
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--text);
+        outline: none;
+        box-shadow: inset 0 4px 12px rgba(255,255,255,0.55);
+      }
+
+      .step-input:focus {
+        border-color: var(--pink-deep);
+        box-shadow: 0 0 0 4px rgba(255, 137, 166, 0.14);
+      }
+
+      .step-suffix {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-soft);
+        font-weight: 700;
+      }
+
+      .quick-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .quick-btn {
+        padding: 12px 8px;
+        background: linear-gradient(180deg, #fff7f9, #ffe1e8);
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .earnings-box {
+        margin-top: 14px;
+        padding: 16px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, rgba(255, 181, 194, 0.22), rgba(255,255,255,0.7));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .earnings-box strong { display: block; font-size: 24px; color: var(--pink-deep); }
+
+      .submit-btn {
+        width: 100%;
+        margin-top: 14px;
+        padding: 16px;
+        background: linear-gradient(180deg, #ffb5c2, #ff94aa);
+        color: white;
+        font-size: 16px;
+        font-weight: 800;
+        box-shadow: 0 16px 22px rgba(255, 137, 166, 0.24);
+      }
+
+      .submit-btn[disabled] {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .tip-text { margin-top: 10px; font-size: 12px; color: var(--text-soft); line-height: 1.6; }
+      .list { display: grid; gap: 10px; }
+
+      .history-item,
+      .leader-item,
+      .invite-card { padding: 14px 14px; }
+
+      .history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .history-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .history-emoji,
+      .leader-avatar,
+      .rank-badge {
+        width: 44px;
+        height: 44px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(180deg, #ffe6ec, #fff7f9);
+        font-size: 22px;
+        box-shadow: inset 0 3px 8px rgba(255,255,255,0.75);
+      }
+
+      .history-title,
+      .leader-name { font-weight: 800; font-size: 14px; }
+
+      .history-sub,
+      .leader-sub,
+      .small-note { margin-top: 4px; font-size: 12px; color: var(--text-soft); }
+
+      .history-amount,
+      .leader-score { text-align: right; font-weight: 800; }
+
+      .wallet-balance {
+        padding: 18px;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 12px;
+      }
+
+      .wallet-balance::before {
+        content: "🐕🐾";
+        position: absolute;
+        right: 14px;
+        top: 14px;
+        font-size: 20px;
+        opacity: 0.26;
+      }
+
+      .balance-label { font-size: 13px; color: var(--text-soft); font-weight: 700; }
+      .balance-value { margin-top: 8px; font-size: 34px; font-weight: 800; color: var(--pink-deep); }
+
+      .podium {
+        display: grid;
+        grid-template-columns: 1fr 1.1fr 1fr;
+        align-items: end;
+        gap: 10px;
+      }
+
+      .podium-card { padding: 14px 10px; text-align: center; }
+      .podium-card.first { min-height: 170px; background: linear-gradient(180deg, rgba(255, 216, 107, 0.95), rgba(255, 245, 199, 0.95)); }
+      .podium-card.second { min-height: 145px; background: linear-gradient(180deg, rgba(216, 223, 244, 0.95), rgba(247, 248, 255, 0.95)); }
+      .podium-card.third { min-height: 130px; background: linear-gradient(180deg, rgba(242, 185, 157, 0.95), rgba(255, 241, 235, 0.95)); }
+
+      .podium-rank { font-size: 28px; }
+      .podium-name { margin-top: 10px; font-weight: 800; }
+      .podium-step { margin-top: 6px; font-size: 13px; color: var(--text-soft); }
+
+      .leader-list { margin-top: 12px; display: grid; gap: 10px; }
+
+      .leader-item {
+        display: grid;
+        grid-template-columns: auto auto 1fr auto;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .leader-item.me {
+        outline: 3px solid rgba(255, 137, 166, 0.22);
+        background: linear-gradient(180deg, #fff6f8, #ffdfe7);
+      }
+
+      .rank-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 14px;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .invite-card {
+        margin-top: 14px;
+        background: linear-gradient(135deg, rgba(255,181,194,0.45), rgba(255,255,255,0.9));
+      }
+
+      .invite-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        margin-top: 12px;
+      }
+
+      .invite-btn {
+        border: none;
+        border-radius: 18px;
+        padding: 12px 16px;
+        background: linear-gradient(180deg, #ff9fb3, #ff88a2);
+        color: white;
+        font-weight: 800;
+        box-shadow: 0 12px 18px rgba(255, 137, 166, 0.24);
+        cursor: pointer;
+      }
+
+      .bottom-nav {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.74);
+        backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,0.9);
+        border-radius: 28px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        box-shadow: 0 18px 30px rgba(206, 116, 145, 0.18);
+      }
+
+      .nav-btn {
+        background: transparent;
+        border-radius: 22px;
+        padding: 10px 6px;
+        color: var(--text-soft);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .nav-btn.active {
+        background: linear-gradient(180deg, #ffdce5, #fff5f7);
+        color: var(--text);
+        box-shadow: inset 0 2px 8px rgba(255,255,255,0.85);
+      }
+
+      .nav-icon { font-size: 20px; line-height: 1; }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 108px;
+        transform: translateX(-50%) translateY(16px);
+        background: rgba(122, 67, 85, 0.92);
+        color: white;
+        padding: 12px 16px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 700;
+        opacity: 0;
+        pointer-events: none;
+        transition: 0.25s ease;
+        z-index: 20;
+        box-shadow: 0 16px 24px rgba(122, 67, 85, 0.24);
+      }
+
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+      .foot-space { height: 4px; }
+
+      @keyframes floaty {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-8px) rotate(-10deg); }
+      }
+
+      @keyframes popIn {
+        from { opacity: 0; transform: translateY(14px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      @keyframes riseUp {
+        from { transform: scaleY(0.2); transform-origin: bottom; opacity: 0.55; }
+        to { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
+      }
+
+      @media (max-width: 360px) {
+        body { padding: 10px; }
+        .screen { padding-inline: 14px; }
+        .stats-grid, .wallet-stats, .actions-grid, .quick-row { gap: 8px; }
+        .hero-title { font-size: 24px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <main>
+        <section class="screen active" data-screen="home">
+          <div class="topbar">
+            <div class="bubble">🐕 Moneywalk</div>
+            <div class="mini-badge">🐾 今天也要可愛地走路</div>
+          </div>
+
+          <div class="hero-card">
+            <div class="bubble">🌸 <span id="greetingText">早安</span></div>
+            <h1 class="hero-title">和柴柴一起把步數變成零用錢 ✨</h1>
+            <p class="hero-sub">今天每一步都會亮晶晶記下來，走一走就能累積小錢包！🐕🐾</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">今日步數</div>
+              <div class="stat-value" id="todaySteps">0</div>
+              <div class="stat-note">步 👟</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">今日收入</div>
+              <div class="stat-value" id="todayEarnings">$0.00</div>
+              <div class="stat-note">汪幣 💰</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">連續天數</div>
+              <div class="stat-value" id="streakDays">0</div>
+              <div class="stat-note">天 🔥</div>
+            </div>
+          </div>
+
+          <div class="actions-grid">
+            <button class="action-btn" data-jump="report">
+              <span class="action-emoji">📝</span>
+              <span class="action-text">回報步數</span>
+            </button>
+            <button class="action-btn" data-jump="wallet">
+              <span class="action-emoji">💗</span>
+              <span class="action-text">我的錢包</span>
+            </button>
+            <button class="action-btn" data-jump="leaderboard">
+              <span class="action-emoji">🏆</span>
+              <span class="action-text">排行榜</span>
+            </button>
+          </div>
+
+          <div class="section-title">
+            <h2>📅 本月總覽</h2>
+            <span>柴柴散步進度表</span>
+          </div>
+          <div class="panel">
+            <div class="bubble">🐾 本週小目標：35,000 步</div>
+            <div class="overview-bars" id="monthlyOverview"></div>
+          </div>
+          <div class="foot-space"></div>
+        </section>
+
+        <section class="screen" data-screen="report">
+          <div class="topbar">
+            <div class="bubble">📝 步數回報</div>
+            <div class="mini-badge" id="reportBadge">今日尚未回報</div>
+          </div>
+
+          <div class="panel input-card">
+            <h2 style="font-size: 20px; font-weight: 800">輸入今天的步數 🐾</h2>
+            <p class="tip-text">一日限回報一次，系統會自動幫你換算收入：1 步 = $0.01</p>
+
+            <div class="step-input-wrap">
+              <input id="stepInput" class="step-input" type="number" min="0" step="1" placeholder="請輸入步數" />
+              <span class="step-suffix">步</span>
+            </div>
+
+            <div class="quick-row">
+              <button class="quick-btn" data-steps="1000">1000</button>
+              <button class="quick-btn" data-steps="3000">3000</button>
+              <button class="quick-btn" data-steps="5000">5000</button>
+              <button class="quick-btn" data-steps="10000">10000</button>
+            </div>
+
+            <div class="earnings-box">
+              <div>
+                <div class="stat-label">預估收入</div>
+                <strong id="estimatedEarnings">$0.00</strong>
+              </div>
+              <div class="bubble">💸 好感度 + 可愛度同步上升</div>
+            </div>
+
+            <button id="submitReportBtn" class="submit-btn">送出今日回報 🐕</button>
+            <p class="tip-text" id="reportTip">記得每天都帶著柴柴散步喔～</p>
+          </div>
+
+          <div class="section-title">
+            <h2>📚 回報紀錄</h2>
+            <span>最近幾次的散步紀錄</span>
+          </div>
+          <div class="list" id="reportHistory"></div>
+        </section>
+
+        <section class="screen" data-screen="wallet">
+          <div class="topbar">
+            <div class="bubble">💰 我的錢包</div>
+            <div class="mini-badge">🐕 柴柴存錢罐</div>
+          </div>
+
+          <div class="wallet-balance">
+            <div class="balance-label">目前餘額</div>
+            <div class="balance-value" id="walletBalance">$0.00</div>
+            <div class="small-note">每一步都是甜甜的小收入 🍡</div>
+          </div>
+
+          <div class="wallet-stats">
+            <div class="stat-card">
+              <div class="stat-label">活躍天數</div>
+              <div class="stat-value" id="activeDays">0</div>
+              <div class="stat-note">天 📆</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">連續天數</div>
+              <div class="stat-value" id="walletStreak">0</div>
+              <div class="stat-note">天 🔥</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">累積步數</div>
+              <div class="stat-value" id="totalSteps">0</div>
+              <div class="stat-note">步 👣</div>
+            </div>
+          </div>
+
+          <div class="section-title">
+            <h2>🧾 交易紀錄</h2>
+            <span>收入都會記在這裡</span>
+          </div>
+          <div class="list" id="transactionHistory"></div>
+        </section>
+
+        <section class="screen" data-screen="leaderboard">
+          <div class="topbar">
+            <div class="bubble">🏆 可愛步步榜</div>
+            <div class="mini-badge">👑 本週人氣排行</div>
+          </div>
+
+          <div class="section-title" style="margin-top: 0">
+            <h2>👑 Top 3 柴柴榮耀台</h2>
+            <span>走最多的就是今天主角</span>
+          </div>
+
+          <div class="podium" id="podium"></div>
+
+          <div class="section-title">
+            <h2>🌟 前 10 名排行榜</h2>
+            <span>目前你也在榜上喔</span>
+          </div>
+          <div class="leader-list" id="leaderList"></div>
+
+          <div class="invite-card">
+            <h3 style="font-size: 18px; font-weight: 800">💌 邀請朋友一起賺</h3>
+            <p class="tip-text">邀請好友加入 Moneywalk，和你一起組成最可愛的散步小隊 🐕🐾</p>
+            <div class="invite-row">
+              <div class="bubble">🎁 每邀請 1 位好友可得 $8.88</div>
+              <button class="invite-btn" id="inviteBtn">立即邀請</button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav">
+        <button class="nav-btn active" data-target="home">
+          <span class="nav-icon">🏠</span>
+          <span>首頁</span>
+        </button>
+        <button class="nav-btn" data-target="report">
+          <span class="nav-icon">📝</span>
+          <span>回報</span>
+        </button>
+        <button class="nav-btn" data-target="wallet">
+          <span class="nav-icon">💰</span>
+          <span>錢包</span>
+        </button>
+        <button class="nav-btn" data-target="leaderboard">
+          <span class="nav-icon">🏆</span>
+          <span>排行</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <script>
+      const STORAGE_KEY = "moneywalk-kawaii-state";
+      const todayKey = new Date().toISOString().slice(0, 10);
+
+      const defaultState = {
+        reports: [
+          { date: "2026-05-17", steps: 3200, earnings: 32 },
+          { date: "2026-05-18", steps: 5400, earnings: 54 },
+          { date: "2026-05-19", steps: 8600, earnings: 86 },
+        ],
+      };
+
+      const animals = ["🐰", "🐻", "🦊", "🐼", "🐯", "🐨", "🐸", "🐹", "🦁", "🐱"];
+
+      const leaderboardSeed = [
+        { name: "Momo 兔兔", emoji: "🐰", steps: 16420 },
+        { name: "Coco 熊熊", emoji: "🐻", steps: 15880 },
+        { name: "Yuki 狐狐", emoji: "🦊", steps: 14950 },
+        { name: "陳彥瑋", emoji: "🐕", steps: 13880, me: true },
+        { name: "Panda 醬", emoji: "🐼", steps: 13120 },
+        { name: "Tora 虎虎", emoji: "🐯", steps: 12400 },
+        { name: "Kuma 小熊", emoji: "🐨", steps: 11930 },
+        { name: "Piyo 蛙蛙", emoji: "🐸", steps: 11360 },
+        { name: "Mugi 倉鼠", emoji: "🐹", steps: 10990 },
+        { name: "Neko 喵喵", emoji: "🐱", steps: 10320 },
+      ];
+
+      const screens = [...document.querySelectorAll(".screen")];
+      const navButtons = [...document.querySelectorAll(".nav-btn")];
+      const jumpButtons = [...document.querySelectorAll("[data-jump]")];
+      const quickButtons = [...document.querySelectorAll(".quick-btn")];
+      const stepInput = document.getElementById("stepInput");
+      const estimatedEarnings = document.getElementById("estimatedEarnings");
+      const submitReportBtn = document.getElementById("submitReportBtn");
+      const reportBadge = document.getElementById("reportBadge");
+      const reportTip = document.getElementById("reportTip");
+      const toastEl = document.getElementById("toast");
+
+      function loadState() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+          if (saved && Array.isArray(saved.reports)) return saved;
+        } catch (error) {}
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultState));
+        return structuredClone(defaultState);
+      }
+
+      let state = loadState();
+
+      function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+
+      function showToast(message) {
+        toastEl.textContent = message;
+        toastEl.classList.add("show");
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => toastEl.classList.remove("show"), 1900);
+      }
+
+      function currency(value) {
+        return `$${Number(value).toFixed(2)}`;
+      }
+
+      function greetingByHour() {
+        const hour = new Date().getHours();
+        if (hour < 11) return "早安";
+        if (hour < 18) return "午安";
+        return "晚安";
+      }
+
+      function sameDay(dateA, dateB) {
+        return dateA === dateB;
+      }
+
+      function getTodayReport() {
+        return state.reports.find((item) => sameDay(item.date, todayKey));
+      }
+
+      function getTotalSteps() {
+        return state.reports.reduce((sum, item) => sum + item.steps, 0);
+      }
+
+      function getBalance() {
+        return state.reports.reduce((sum, item) => sum + item.earnings, 0);
+      }
+
+      function getStreak() {
+        const sorted = [...state.reports]
+          .map((item) => item.date)
+          .sort((a, b) => new Date(b) - new Date(a));
+        if (!sorted.length) return 0;
+
+        let streak = 0;
+        let cursor = new Date(todayKey + "T00:00:00");
+
+        for (;;) {
+          const key = cursor.toISOString().slice(0, 10);
+          if (sorted.includes(key)) {
+            streak += 1;
+            cursor.setDate(cursor.getDate() - 1);
+          } else {
+            break;
+          }
+        }
+        return streak;
+      }
+
+      function getOverviewData() {
+        const labels = ["一", "二", "三", "四", "五", "六", "日"];
+        const base = [2800, 4600, 7300, 5200, 6100, 8400, 4900];
+        const todayReport = getTodayReport();
+        const today = new Date();
+        const dayIndex = (today.getDay() + 6) % 7;
+        if (todayReport) base[dayIndex] = todayReport.steps;
+        return labels.map((label, index) => ({
+          label,
+          steps: base[index],
+        }));
+      }
+
+      function renderOverview() {
+        const overview = document.getElementById("monthlyOverview");
+        const data = getOverviewData();
+        const max = Math.max(...data.map((item) => item.steps), 10000);
+        overview.innerHTML = data
+          .map(
+            (item, index) => `
+              <div class="overview-day">
+                <div class="overview-bar-wrap">
+                  <div class="overview-bar" style="height:${Math.max(18, (item.steps / max) * 100)}%"></div>
+                </div>
+                <div class="overview-label">${item.label}</div>
+                <div class="overview-value">${item.steps}</div>
+              </div>
+            `
+          )
+          .join("");
+      }
+
+      function renderHomeStats() {
+        const today = getTodayReport();
+        document.getElementById("greetingText").textContent = greetingByHour();
+        document.getElementById("todaySteps").textContent = today ? today.steps.toLocaleString() : "0";
+        document.getElementById("todayEarnings").textContent = currency(today ? today.earnings : 0);
+        document.getElementById("streakDays").textContent = getStreak();
+      }
+
+      function renderWallet() {
+        const balance = getBalance();
+        document.getElementById("walletBalance").textContent = currency(balance);
+        document.getElementById("activeDays").textContent = state.reports.length;
+        document.getElementById("walletStreak").textContent = getStreak();
+        document.getElementById("totalSteps").textContent = getTotalSteps().toLocaleString();
+
+        const history = [...state.reports]
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .map(
+            (item, index) => `
+              <div class="history-item">
+                <div class="history-left">
+                  <div class="history-emoji">${animals[index % animals.length]}</div>
+                  <div>
+                    <div class="history-title">步行收入入帳</div>
+                    <div class="history-sub">${item.date} ・ ${item.steps.toLocaleString()} 步</div>
+                  </div>
+                </div>
+                <div class="history-amount">
+                  <div>${currency(item.earnings)}</div>
+                  <div class="history-sub">已入帳 💗</div>
+                </div>
+              </div>
+            `
+          )
+          .join("");
+
+        document.getElementById("transactionHistory").innerHTML = history || '<div class="history-item"><div class="history-left"><div class="history-emoji">🐾</div><div><div class="history-title">還沒有交易紀錄</div><div class="history-sub">先去回報今天的步數吧！</div></div></div></div>';
+      }
+
+      function renderReportHistory() {
+        const reportHistory = document.getElementById("reportHistory");
+        const sorted = [...state.reports].sort((a, b) => new Date(b.date) - new Date(a.date));
+        reportHistory.innerHTML = sorted
+          .map(
+            (item, index) => `
+              <div class="history-item">
+                <div class="history-left">
+                  <div class="history-emoji">${index === 0 ? "🐕" : "🐾"}</div>
+                  <div>
+                    <div class="history-title">${item.date}</div>
+                    <div class="history-sub">回報成功 ・ 柴柴已蓋章</div>
+                  </div>
+                </div>
+                <div class="history-amount">
+                  <div>${item.steps.toLocaleString()} 步</div>
+                  <div class="history-sub">${currency(item.earnings)}</div>
+                </div>
+              </div>
+            `
+          )
+          .join("");
+      }
+
+      function renderLeaderboard() {
+        const myTodaySteps = getTodayReport()?.steps || 13880;
+        const rows = leaderboardSeed.map((item) =>
+          item.me ? { ...item, steps: Math.max(item.steps, myTodaySteps) } : item
+        );
+
+        rows.sort((a, b) => b.steps - a.steps);
+        const top3 = rows.slice(0, 3);
+        const rest = rows.slice(0, 10);
+
+        const podiumOrder = [top3[1], top3[0], top3[2]];
+        const classNames = ["second", "first", "third"];
+        const medals = ["🥈", "👑", "🥉"];
+
+        document.getElementById("podium").innerHTML = podiumOrder
+          .map((item, idx) => {
+            if (!item) return "";
+            return `
+              <div class="podium-card ${classNames[idx]}">
+                <div class="podium-rank">${medals[idx]}</div>
+                <div style="font-size: 30px; margin-top: 10px">${item.emoji}</div>
+                <div class="podium-name">${item.name}</div>
+                <div class="podium-step">${item.steps.toLocaleString()} 步</div>
+              </div>
+            `;
+          })
+          .join("");
+
+        document.getElementById("leaderList").innerHTML = rest
+          .map(
+            (item, index) => `
+              <div class="leader-item ${item.me ? "me" : ""}">
+                <div class="rank-badge">#${index + 1}</div>
+                <div class="leader-avatar">${item.emoji}</div>
+                <div>
+                  <div class="leader-name">${item.name} ${item.me ? "（你）" : ""}</div>
+                  <div class="leader-sub">${item.me ? "今天也很厲害 ✨" : "一起和柴柴衝步數"}</div>
+                </div>
+                <div class="leader-score">${item.steps.toLocaleString()}<div class="leader-sub">步</div></div>
+              </div>
+            `
+          )
+          .join("");
+      }
+
+      function updateReportBox() {
+        const today = getTodayReport();
+        if (today) {
+          reportBadge.textContent = `今日已回報 ${today.steps.toLocaleString()} 步`;
+          reportTip.textContent = `今天已成功回報，收入 ${currency(today.earnings)} 已放進錢包 💗`;
+          submitReportBtn.disabled = true;
+          submitReportBtn.textContent = "今天已完成回報 ✅";
+          stepInput.value = today.steps;
+          estimatedEarnings.textContent = currency(today.earnings);
+        } else {
+          reportBadge.textContent = "今日尚未回報";
+          reportTip.textContent = "記得每天都帶著柴柴散步喔～";
+          submitReportBtn.disabled = false;
+          submitReportBtn.textContent = "送出今日回報 🐕";
+          if (!Number(stepInput.value)) estimatedEarnings.textContent = "$0.00";
+        }
+      }
+
+      function rerender() {
+        renderHomeStats();
+        renderOverview();
+        renderWallet();
+        renderReportHistory();
+        renderLeaderboard();
+        updateReportBox();
+      }
+
+      function goTo(screenName) {
+        screens.forEach((screen) => screen.classList.toggle("active", screen.dataset.screen === screenName));
+        navButtons.forEach((button) => button.classList.toggle("active", button.dataset.target === screenName));
+      }
+
+      navButtons.forEach((button) => {
+        button.addEventListener("click", () => goTo(button.dataset.target));
+      });
+
+      jumpButtons.forEach((button) => {
+        button.addEventListener("click", () => goTo(button.dataset.jump));
+      });
+
+      quickButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          stepInput.value = button.dataset.steps;
+          estimatedEarnings.textContent = currency(Number(button.dataset.steps) * 0.01);
+          showToast(`已填入 ${Number(button.dataset.steps).toLocaleString()} 步 🐾`);
+        });
+      });
+
+      stepInput.addEventListener("input", () => {
+        const steps = Math.max(0, Number(stepInput.value) || 0);
+        estimatedEarnings.textContent = currency(steps * 0.01);
+      });
+
+      submitReportBtn.addEventListener("click", () => {
+        if (getTodayReport()) {
+          showToast("今天已經回報過囉 🐕");
+          return;
+        }
+
+        const steps = Math.floor(Number(stepInput.value) || 0);
+        if (steps <= 0) {
+          showToast("請先輸入有效步數喔～");
+          return;
+        }
+
+        const earnings = Number((steps * 0.01).toFixed(2));
+        state.reports.push({ date: todayKey, steps, earnings });
+        saveState();
+        rerender();
+        goTo("home");
+        showToast(`回報成功！入帳 ${currency(earnings)} ✨`);
+      });
+
+      document.getElementById("inviteBtn").addEventListener("click", () => {
+        showToast("邀請連結已準備好，快揪朋友一起走！ 💌");
+      });
+
+      rerender();
+    </script>
+  </body>
+</html>
