@@ -17,7 +17,14 @@ if not os.path.exists(USERS_FILE):
 
 app = Flask(__name__, static_folder=DIR, static_url_path='')
 app.config['JSON_AS_ASCII'] = False
-app.config['SECRET_KEY'] = secrets.token_hex(32)
+app.config['SECRET_KEY'] = 'chai-stock-manager-secret-key-2026'
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = False  # Set True in production with HTTPS
+
+# Allow CORS for same-origin and cross-origin in dev
+from flask_cors import CORS
+CORS(app, supports_credentials=True)
 
 import sys, io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -110,13 +117,53 @@ def api_data():
         return jsonify({'success': False, 'error': '請先登入'}), 401
     if request.method == 'GET':
         data = load_user_data(user)
-        return jsonify({'success': True, 'data': data})
+        # Transform backend format to SPA-compatible format
+        spa_stocks = []
+        for s in data.get('stocks', []):
+            spa_stocks.append({
+                'id': s.get('code', ''),
+                'name': s.get('name', ''),
+                'shares': s.get('shares', 0),
+                'avgPrice': s.get('buy_price', 0),
+                'currentPrice': s.get('current_price', s.get('buy_price', 0))
+            })
+        spa_history = []
+        for h in data.get('history', []):
+            spa_history.append({
+                'id': h.get('id', ''),
+                'time': h.get('date', ''),
+                'action': '買入' if h.get('type') == 'buy' else '賣出',
+                'name': h.get('name', ''),
+                'shares': h.get('shares', 0),
+                'price': h.get('price', 0)
+            })
+        return jsonify({'success': True, 'data': {'stocks': spa_stocks, 'history': spa_history}})
     else:
         body = request.get_json()
         if not body or 'stocks' not in body or 'history' not in body:
             return jsonify({'success': False, 'error': '資料格式錯誤'})
+        # Transform SPA format back to backend format
+        backend_stocks = []
+        for s in body.get('stocks', []):
+            backend_stocks.append({
+                'code': s.get('id', ''),
+                'name': s.get('name', ''),
+                'shares': s.get('shares', 0),
+                'buy_price': s.get('avgPrice', 0),
+                'current_price': s.get('currentPrice', s.get('avgPrice', 0))
+            })
+        backend_history = []
+        for h in body.get('history', []):
+            backend_history.append({
+                'id': h.get('id', ''),
+                'date': h.get('time', ''),
+                'type': 'buy' if h.get('action') == '買入' else 'sell',
+                'name': h.get('name', ''),
+                'shares': h.get('shares', 0),
+                'price': h.get('price', 0)
+            })
         with lock:
-            save_user_data(user, {'stocks': body['stocks'], 'history': body['history']})
+            save_user_data(user, {'stocks': backend_stocks, 'history': backend_history})
         return jsonify({'success': True})
 
 # ---------- API: STOCK PRICE PROXY ----------
@@ -150,9 +197,13 @@ def api_stock():
     return jsonify({'success': True, 'prices': prices})
 
 # ---------- STATIC FILES ----------
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    return send_from_directory(os.path.join(DIR, 'shiba-stock', 'assets'), filename)
+
 @app.route('/')
 def serve_index():
-    return send_from_directory(DIR, 'stock_tool.html')
+    return send_from_directory(os.path.join(DIR, 'shiba-stock'), 'index.html')
 
 if __name__ == '__main__':
     import socket
