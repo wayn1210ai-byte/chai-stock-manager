@@ -121,19 +121,19 @@ def api_data():
         spa_stocks = []
         for s in data.get('stocks', []):
             spa_stocks.append({
-                'id': s.get('code', ''),
-                'name': s.get('name', ''),
+                'id': s.get('id', s.get('code', '')),
+                'stockName': s.get('stockName', s.get('name', '')),
                 'shares': s.get('shares', 0),
-                'avgPrice': s.get('buy_price', 0),
-                'currentPrice': s.get('current_price', s.get('buy_price', 0))
+                'averagePrice': s.get('averagePrice', s.get('buy_price', 0)),
+                'currentPrice': s.get('currentPrice', s.get('current_price', s.get('buy_price', 0)))
             })
         spa_history = []
         for h in data.get('history', []):
             spa_history.append({
                 'id': h.get('id', ''),
-                'time': h.get('date', ''),
-                'action': '買入' if h.get('type') == 'buy' else '賣出',
-                'name': h.get('name', ''),
+                'timestamp': h.get('timestamp', h.get('date', '')),
+                'action': h.get('action', '買入' if h.get('type') == 'buy' else '賣出'),
+                'stockName': h.get('stockName', h.get('name', '')),
                 'shares': h.get('shares', 0),
                 'price': h.get('price', 0)
             })
@@ -146,19 +146,19 @@ def api_data():
         backend_stocks = []
         for s in body.get('stocks', []):
             backend_stocks.append({
-                'code': s.get('id', ''),
-                'name': s.get('name', ''),
+                'code': s.get('id', s.get('stockName', '')),
+                'name': s.get('stockName', s.get('name', '')),
                 'shares': s.get('shares', 0),
-                'buy_price': s.get('avgPrice', 0),
-                'current_price': s.get('currentPrice', s.get('avgPrice', 0))
+                'buy_price': s.get('averagePrice', s.get('avgPrice', 0)),
+                'current_price': s.get('currentPrice', s.get('averagePrice', s.get('avgPrice', 0)))
             })
         backend_history = []
         for h in body.get('history', []):
             backend_history.append({
                 'id': h.get('id', ''),
-                'date': h.get('time', ''),
-                'type': 'buy' if h.get('action') == '買入' else 'sell',
-                'name': h.get('name', ''),
+                'date': h.get('timestamp', h.get('time', '')),
+                'type': 'buy' if h.get('action', '買入') == '買入' else 'sell',
+                'name': h.get('stockName', h.get('name', '')),
                 'shares': h.get('shares', 0),
                 'price': h.get('price', 0)
             })
