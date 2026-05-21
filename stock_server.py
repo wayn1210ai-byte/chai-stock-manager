@@ -18,9 +18,9 @@ if not os.path.exists(USERS_FILE):
 app = Flask(__name__, static_folder=DIR, static_url_path='')
 app.config['JSON_AS_ASCII'] = False
 app.config['SECRET_KEY'] = 'chai-stock-manager-secret-key-2026'
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SECURE'] = False  # Set True in production with HTTPS
 
 # Allow CORS for same-origin and cross-origin in dev
 from flask_cors import CORS
