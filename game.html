@@ -134,7 +134,7 @@ function updB(){
   let b=bull[i];b.x+=b.vx;b.y+=b.vy;b.l--;
   if(b.l<=0||b.x<0||b.x>MW*TS){bull.splice(i,1);continue;}
   for(let e of ob.en){if(!e.al)continue;if(Math.abs(b.x-e.x)<18&&Math.abs(b.y-e.y)<18){e.hp--;if(e.hp<=0){e.al=false;st.sc+=100;}bull.splice(i,1);break;}}
-  if(boss&&boss.al&&Math.abs(b.x-boss.x)<28&&Math.abs(b.y-boss.y)<28){boss.hp--;bull.splice(i,1);if(boss.hp<=0){boss.al=false;st.sc+=500;bh.style.display='none';}else bf.style.width=(boss.hp/boss.mhp*100)+'%';}
+  if(boss&&boss.al&&!b.boss&&Math.abs(b.x-boss.x)<28&&Math.abs(b.y-boss.y)<28){boss.hp--;bull.splice(i,1);if(boss.hp<=0){boss.al=false;st.sc+=500;bh.style.display='none';}else bf.style.width=(boss.hp/boss.mhp*100)+'%';}
  }
 }
 
