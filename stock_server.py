@@ -281,6 +281,10 @@ def serve_assets(filename):
 def serve_index():
     return send_from_directory(os.path.join(DIR, 'shiba-stock'), 'index.html')
 
+@app.route('/game')
+def serve_game():
+    return send_from_directory(DIR, 'game.html')
+
 if __name__ == '__main__':
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)
@@ -290,3 +294,4 @@ if __name__ == '__main__':
     print(f'📱 本機: http://localhost:{PORT}')
     print(f'📱 內網: http://{local_ip}:{PORT}')
     app.run(host='0.0.0.0', port=PORT, debug=False)
+
