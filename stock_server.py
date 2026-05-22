@@ -329,14 +329,17 @@ def api_health():
     for key in candidates:
         val = os.environ.get(key, '')
         if val:
-            found_vars[key] = val[:30] + '...'
+            found_vars[key] = val[:40] + '...'
         else:
             found_vars[key] = 'NOT SET'
+    
+    # Show the fixed URL
+    fixed_url = DATABASE_URL[:60] + '...' if DATABASE_URL else 'EMPTY'
     
     if DATABASE_URL:
         try:
             import psycopg2
-            conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+            conn = psycopg2.connect(DATABASE_URL, sslmode='require', connect_timeout=10)
             conn.autocommit = True
             cur = conn.cursor()
             cur.execute('SELECT 1')
@@ -351,7 +354,8 @@ def api_health():
         'status': 'ok',
         'database': db_mode,
         'db_connection': db_status,
-        'env_vars': found_vars
+        'env_vars': found_vars,
+        'fixed_db_url': fixed_url
     })
 
 @app.route('/')
