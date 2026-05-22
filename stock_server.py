@@ -9,7 +9,7 @@ PORT = int(os.environ.get('PORT', 8765))
 DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(DIR, 'data')
 USERS_FILE = os.path.join(DATA_DIR, 'users.json')
-DATABASE_URL = os.environ.get('DATABASE_URL', '')
+DATABASE_URL = os.environ.get('DATABASE_URL', '') or os.environ.get('RENDER_DATABASE_URL', '') or os.environ.get('CHAI_STOCK_DB_DATABASE_URL', '') or os.environ.get('POSTGRES_URL', '')
 lock = threading.Lock()
 
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -281,9 +281,19 @@ def serve_assets(filename):
 def api_health():
     db_status = 'disconnected'
     db_mode = 'JSON 檔案'
-    db_url_hint = ''
+    
+    # Check all possible env var names for database URL
+    candidates = ['DATABASE_URL', 'RENDER_DATABASE_URL', 'CHAI_STOCK_DB_DATABASE_URL', 
+                  'CHAI_STOCK_DB_URL', 'POSTGRES_URL', 'POSTGRESQL_URL']
+    found_vars = {}
+    for key in candidates:
+        val = os.environ.get(key, '')
+        if val:
+            found_vars[key] = val[:30] + '...'
+        else:
+            found_vars[key] = 'NOT SET'
+    
     if DATABASE_URL:
-        db_url_hint = DATABASE_URL[:20] + '...'
         try:
             import psycopg2
             conn = psycopg2.connect(DATABASE_URL, sslmode='require')
@@ -296,13 +306,12 @@ def api_health():
             db_mode = 'PostgreSQL'
         except Exception as e:
             db_status = f'error: {str(e)[:80]}'
-    else:
-        db_url_hint = 'NOT SET'
+    
     return jsonify({
         'status': 'ok',
         'database': db_mode,
         'db_connection': db_status,
-        'DATABASE_URL': db_url_hint
+        'env_vars': found_vars
     })
 
 @app.route('/')
