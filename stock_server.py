@@ -21,16 +21,34 @@ pg_conn = None
 if DATABASE_URL:
     try:
         import psycopg2
-        pg_conn = psycopg2.connect(DATABASE_URL, sslmode='require')
-        pg_conn.autocommit = True
-        cur = pg_conn.cursor()
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                username TEXT PRIMARY KEY,
-                password TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT NOW()
-            )
-        ''')
+        # Try connecting with different SSL modes
+        connected = False
+        last_error = ''
+        for ssl in ['require', 'allow', 'prefer']:
+            try:
+                conn = psycopg2.connect(DATABASE_URL, sslmode=ssl, connect_timeout=10)
+                conn.autocommit = True
+                cur = conn.cursor()
+                cur.execute('SELECT 1')
+                cur.close()
+                conn.close()
+                connected = True
+                break
+            except Exception as e:
+                last_error = str(e)[:60]
+                continue
+        if connected:
+            use_pg = True
+            pg_conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+            pg_conn.autocommit = True
+            cur = pg_conn.cursor()
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    username TEXT PRIMARY KEY,
+                    password TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            ''')
         cur.execute('''
             CREATE TABLE IF NOT EXISTS stock_data (
                 username TEXT NOT NULL,
