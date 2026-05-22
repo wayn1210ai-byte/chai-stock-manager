@@ -277,6 +277,34 @@ def api_stock():
 def serve_assets(filename):
     return send_from_directory(os.path.join(DIR, 'shiba-stock', 'assets'), filename)
 
+@app.route('/api/health')
+def api_health():
+    db_status = 'disconnected'
+    db_mode = 'JSON 檔案'
+    if use_pg:
+        try:
+            cur = pg_conn.cursor()
+            cur.execute('SELECT 1')
+            cur.close()
+            db_status = 'connected'
+            db_mode = 'PostgreSQL'
+        except:
+            db_status = 'error - reconnecting...'
+            # Try to reconnect
+            try:
+                import psycopg2
+                pg_conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+                pg_conn.autocommit = True
+                db_status = 'reconnected'
+            except:
+                db_status = 'failed'
+    return jsonify({
+        'status': 'ok',
+        'database': db_mode,
+        'db_connection': db_status,
+        'users': len(db_load_users()) if use_pg else 'file'
+    })
+
 @app.route('/')
 def serve_index():
     return send_from_directory(os.path.join(DIR, 'shiba-stock'), 'index.html')
