@@ -341,7 +341,7 @@ function draw(){
  mx.fillStyle='rgba(0,0,0,.7)';mx.fillRect(0,0,90,24);
  for(let y=0;y<15;y++)for(let x=0;x<MW;x++){if(lv[y][x]>0){mx.fillStyle=t.mc;mx.fillRect(x*90/MW,y*24/15,Math.ceil(90/MW),Math.ceil(24/15));}}
  mx.fillStyle='#0F0';mx.fillRect((pl.x/TS)*90/MW-1,(pl.y/TS)*24/15-1,2,2);
- mx.strokeStyle='rgba(255,255,255,.4)';mx.strokeRect((cam.x/TS)*90/MW,(cam.y/TS)*90/MW,(CW/TS)*90/MW,(CH/TS)*90/MW);
+ mx.strokeStyle='rgba(255,255,255,.4)';mx.strokeRect((cam.x/TS)*90/MW,(cam.y/TS)*24/15,(CW/TS)*90/MW,(CH/TS)*24/15);
  if(boss&&boss.al){mx.fillStyle='#F00';mx.fillRect(((MW-15))*90/MW-2,11*24/15-2,5,5);}
 }
 
