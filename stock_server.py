@@ -315,6 +315,11 @@ def api_stock():
 # ---------- STATIC FILES ----------
 @app.route('/assets/<path:filename>')
 def serve_assets(filename):
+    # Serve patched JS if available
+    if filename.endswith('.js'):
+        patched = os.path.join(DIR, 'shiba-stock', 'assets', filename)
+        if os.path.exists(patched):
+            return send_from_directory(os.path.join(DIR, 'shiba-stock', 'assets'), filename)
     return send_from_directory(os.path.join(DIR, 'shiba-stock', 'assets'), filename)
 
 @app.route('/api/health')
