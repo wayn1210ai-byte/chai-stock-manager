@@ -192,6 +192,9 @@ def api_register():
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
+    # Clear any stale session first
+    session.pop('user', None)
+    session.clear()
     data = request.get_json()
     username = (data.get('username') or '').strip()
     password = data.get('password', '')
