@@ -281,28 +281,28 @@ def serve_assets(filename):
 def api_health():
     db_status = 'disconnected'
     db_mode = 'JSON 檔案'
-    if use_pg:
+    db_url_hint = ''
+    if DATABASE_URL:
+        db_url_hint = DATABASE_URL[:20] + '...'
         try:
-            cur = pg_conn.cursor()
+            import psycopg2
+            conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+            conn.autocommit = True
+            cur = conn.cursor()
             cur.execute('SELECT 1')
             cur.close()
+            conn.close()
             db_status = 'connected'
             db_mode = 'PostgreSQL'
-        except:
-            db_status = 'error - reconnecting...'
-            # Try to reconnect
-            try:
-                import psycopg2
-                pg_conn = psycopg2.connect(DATABASE_URL, sslmode='require')
-                pg_conn.autocommit = True
-                db_status = 'reconnected'
-            except:
-                db_status = 'failed'
+        except Exception as e:
+            db_status = f'error: {str(e)[:80]}'
+    else:
+        db_url_hint = 'NOT SET'
     return jsonify({
         'status': 'ok',
         'database': db_mode,
         'db_connection': db_status,
-        'users': len(db_load_users()) if use_pg else 'file'
+        'DATABASE_URL': db_url_hint
     })
 
 @app.route('/')
