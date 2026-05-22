@@ -11,3 +11,11 @@ services:
         value: zh_TW.UTF-8
       - key: LC_ALL
         value: zh_TW.UTF-8
+      - key: SECRET_KEY
+        generateValue: true
+
+databases:
+  - name: chai-stock-db
+    databaseName: stocks
+    user: chai_stock_user
+    plan: free
