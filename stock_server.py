@@ -176,22 +176,30 @@ def api_stock():
     code_list = [c.strip() for c in codes.split(',') if c.strip()]
     prices = {}
     for code in code_list:
-        url = f'https://query1.finance.yahoo.com/v8/finance/chart/{code}.TW?range=1d&interval=1d'
-        try:
-            req = urllib.request.Request(url, headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            })
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read().decode())
-            result = data.get('chart', {}).get('result', [])
-            for item in result:
-                meta = item.get('meta', {})
-                symbol = meta.get('symbol', '').replace('.TW', '')
-                price = meta.get('regularMarketPrice')
-                if symbol and price:
-                    prices[symbol] = price
-        except Exception:
-            pass
+        price = None
+        # Try .TW first, then .TWO as fallback
+        for suffix in ['.TW', '.TWO']:
+            url = f'https://query1.finance.yahoo.com/v8/finance/chart/{code}{suffix}?range=1d&interval=1d'
+            try:
+                req = urllib.request.Request(url, headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                })
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    data = json.loads(resp.read().decode())
+                result = data.get('chart', {}).get('result', [])
+                for item in result:
+                    meta = item.get('meta', {})
+                    symbol = meta.get('symbol', '').replace('.TW', '').replace('.TWO', '')
+                    p = meta.get('regularMarketPrice')
+                    if symbol and p:
+                        price = p
+                        break
+                if price:
+                    break
+            except Exception:
+                pass
+        if price:
+            prices[code] = price
         import time
         time.sleep(0.3)
     return jsonify({'success': True, 'prices': prices})
