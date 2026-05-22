@@ -10,6 +10,28 @@ DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(DIR, 'data')
 USERS_FILE = os.path.join(DATA_DIR, 'users.json')
 DATABASE_URL = os.environ.get('DATABASE_URL', '') or os.environ.get('RENDER_DATABASE_URL', '') or os.environ.get('CHAI_STOCK_DB_DATABASE_URL', '') or os.environ.get('POSTGRES_URL', '')
+
+# Fix Render internal hostname - try appending domain suffix
+import re as _re
+def _fix_render_db_url(url):
+    """If the hostname lacks a TLD, try appending .render.com"""
+    if not url: return url
+    m = _re.match(r'(postgresql://[^@]+@)([^:/]+)(.*)', url)
+    if m:
+        host = m.group(2)
+        if '.' not in host:  # no TLD (e.g. dpg-xxx-a)
+            for suffix in ['.oregon-postgres.render.com', '.render.com', '.us-east-1.render.com']:
+                candidate = m.group(1) + host + suffix + m.group(3)
+                try:
+                    import socket
+                    socket.gethostbyname(host + suffix)
+                    print(f'✅ Resolved hostname: {host + suffix}')
+                    return candidate
+                except:
+                    continue
+    return url
+
+DATABASE_URL = _fix_render_db_url(DATABASE_URL)
 lock = threading.Lock()
 
 os.makedirs(DATA_DIR, exist_ok=True)
