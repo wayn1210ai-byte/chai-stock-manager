@@ -21,46 +21,217 @@ canvas{display:block;width:480px;height:720px;border-radius:20px;background:#c8e
 const GC=document.getElementById('gc'),CX=GC.getContext('2d');
 const W=480,H=720;
 
-/* ============================================================
-   GAME STATE
-   ============================================================ */
+// === GAME STATE ===
 const G={
   scene:'menu', money:600, energy:60, maxEnergy:100,
   energyRegen:0.08, moneyRegen:0.5,
   baseHp:3000, maxBaseHp:3000,
   enemyBaseHp:3000, maxEnemyBaseHp:3000,
-  frame:0, cats:[], enemies:[], particles:[],
+  frame:0, cats:[], enemies:[], particles:[], dmgTexts:[],
   wave:0, waveEnemies:[], waveProgress:0, waveState:'idle',
-  waveTimer:0, spawnTimer:0, selectedCat:0, pause:false,
-  totalWaves:10, catsKilled:0, enemiesKilled:0,
-  bossSpawned:false, gameWon:false,
-  stats:{}
+  waveTimer:60, spawnTimer:0, selectedCat:0, pause:false,
+  totalWaves:10, catsKilled:0, enemiesKilled:0, gameWon:false
 };
 
+// === KENNEY PIXEL SPRITE SYSTEM ===
+// Draw pixel art onto a temp canvas then blit scaled
+const PIX=16; // base pixel size for sprites
+
+function makeKenneySprite(pixelData, palette) {
+  // pixelData: 2D array [row][col] with palette index, -1 = transparent
+  return function(ctx, x, y, scale) {
+    const s = scale;
+    const off = s / PIX;
+    for(let row=0; row<pixelData.length; row++) {
+      for(let col=0; col<pixelData[row].length; col++) {
+        const idx = pixelData[row][col];
+        if(idx >= 0 && palette[idx]) {
+          ctx.fillStyle = palette[idx];
+          ctx.fillRect(x + col*off - (pixelData[0].length*off)/2, 
+                        y + row*off - (pixelData.length*off)/2, off+0.5, off+0.5);
+        }
+      }
+    }
+  };
+}
+
+// ===== KENNEY PIXEL PALETTES =====
+const CAT_ORANGE = ['#D48030','#FFA451','#FF8C42','#FFE0B0','#FF7FAA','#222','#FFF','#FFD700','#FF4444','#1E90FF','#FF6B35'];
+const CAT_GOLD   = ['#D48030','#FFD700','#FFA500','#FFE0B0','#FF7FAA','#222','#FFF','#FF4444','#8B4513'];
+const CAT_BLUE   = ['#D48030','#FFA451','#1E90FF','#4169E1','#FFE0B0','#222','#FFF','#FF7FAA'];
+const CAT_GREEN  = ['#D48030','#FFA451','#32CD32','#228B22','#FFE0B0','#222','#FFF','#FFD700'];
+const CAT_RED    = ['#D48030','#FF6347','#FF4500','#FFE0B0','#222','#FFF','#FFD700'];
+const CAT_PURPLE = ['#D48030','#9370DB','#7B68EE','#FFE0B0','#222','#FFF','#FFD700','#FF69B4'];
+const CAT_EMPEROR= ['#D48030','#FFD700','#FFA500','#8B0000','#FFE0B0','#222','#FFF','#FF4444','#FF69B4','#4A0080'];
+
+const HUSKY_GRAY = ['#9090A0','#A0A0B0','#B0B0C0','#E8E8F0','#F0F0F8','#333','#FFF','#87CEEB','#FF6B8A','#FFD700','#555'];
+const HUSKY_BOSS = ['#404050','#555568','#666680','#C8C8D8','#D8D8E8','#111','#FFF','#FF4444','#FF6B8A','#FFD700','#333'];
+
+// ===== CAT PIXEL SPRITES (16x16 each, different per type) =====
+const CAT_SPRITES = [
+  // 0: 小橘貓 - basic cat face
+  {px:[
+    [0,0,0,2,2,2,0,0,0],
+    [0,0,2,5,5,5,2,0,0],
+    [0,2,1,1,1,1,1,2,0],
+    [0,2,1,1,1,1,1,2,0],
+    [2,1,1,7,1,7,1,1,2],
+    [2,1,1,1,1,1,1,1,2],
+    [0,2,1,1,1,1,1,2,0],
+    [0,0,2,2,2,2,2,0,0],
+  ],pal:CAT_ORANGE},
+  // 1: 金冠貓 - tank with big gold crown
+  {px:[
+    [0,0,7,7,7,7,7,0,0],
+    [0,7,8,7,8,7,8,7,0],
+    [0,2,1,1,1,1,1,2,0],
+    [0,2,1,1,1,1,1,2,0],
+    [2,1,1,7,1,7,1,1,2],
+    [2,1,1,1,1,1,1,1,2],
+    [0,2,1,1,1,1,1,2,0],
+    [0,2,2,2,2,2,2,2,0],
+  ],pal:CAT_GOLD},
+  // 2: 圍兜貓 - blue bib, aggressive
+  {px:[
+    [0,0,0,2,2,2,0,0,0],
+    [0,0,2,5,5,5,2,0,0],
+    [0,2,1,1,1,1,1,2,0],
+    [0,2,3,3,3,3,3,2,0],
+    [2,1,3,7,3,7,3,1,2],
+    [2,1,1,1,1,1,1,1,2],
+    [0,2,1,1,1,1,1,2,0],
+    [0,0,2,2,2,2,2,0,0],
+  ],pal:CAT_BLUE},
+  // 3: 招財貓 - gold coin, ranged
+  {px:[
+    [0,0,0,2,2,2,0,0,0],
+    [0,0,2,5,5,5,2,0,0],
+    [0,2,1,1,7,1,1,2,0],
+    [0,2,1,7,7,7,1,2,0],
+    [2,1,1,7,7,7,1,1,2],
+    [2,1,1,7,1,7,1,1,2],
+    [0,2,1,1,1,1,1,2,0],
+    [0,0,2,2,2,2,2,0,0],
+  ],pal:CAT_GREEN},
+  // 4: 虎斑貓 - stripes, lean
+  {px:[
+    [0,0,0,2,2,2,0,0,0],
+    [0,0,2,5,5,5,2,0,0],
+    [0,2,3,3,1,3,3,2,0],
+    [0,2,1,1,1,1,1,2,0],
+    [2,1,1,7,1,7,1,1,2],
+    [2,3,1,1,1,1,3,1,2],
+    [0,2,1,1,1,1,1,2,0],
+    [0,0,2,2,2,2,2,0,0],
+  ],pal:CAT_RED},
+  // 5: 飛天貓 - wings, floating
+  {px:[
+    [0,2,0,0,2,0,0,2,0],
+    [0,0,2,5,5,5,2,0,0],
+    [0,2,1,1,1,1,1,2,0],
+    [2,0,1,1,1,1,1,0,2],
+    [0,2,1,7,1,7,1,2,0],
+    [0,0,1,1,1,1,1,0,0],
+    [0,0,2,1,1,1,2,0,0],
+    [0,0,0,2,2,2,0,0,0],
+  ],pal:CAT_PURPLE},
+  // 6: 貓皇帝 - big, grand, red cape
+  {px:[
+    [7,7,7,7,7,7,7,7,7],
+    [7,8,7,8,7,8,7,8,7],
+    [0,2,1,1,1,1,1,2,0],
+    [2,1,3,1,1,1,3,1,2],
+    [2,1,1,7,1,7,1,1,2],
+    [2,1,1,1,9,1,1,1,2],
+    [0,2,1,1,1,1,1,2,0],
+    [0,2,2,2,2,2,2,2,0],
+  ],pal:CAT_EMPEROR}
+];
+
+// ===== HUSKY PIXEL SPRITES =====
+const HUSKY_SPRITES = [
+  // Normal husky
+  {px:[
+    [0,0,2,2,2,2,2,0,0],
+    [0,2,3,3,3,3,3,2,0],
+    [2,3,5,5,5,5,5,3,2],
+    [2,3,5,5,5,5,5,3,2],
+    [0,2,3,7,3,7,3,2,0],
+    [0,2,3,8,8,8,3,2,0],
+    [0,0,2,3,3,3,2,0,0],
+    [0,0,0,2,2,2,0,0,0],
+  ],pal:HUSKY_GRAY},
+  // Boss husky (CEO)
+  {px:[
+    [9,9,9,9,9,9,9,9,9],
+    [9,0,9,0,9,0,9,0,9],
+    [0,2,1,1,1,1,1,2,0],
+    [2,1,3,3,3,3,3,1,2],
+    [2,1,1,5,1,5,1,1,2],
+    [2,1,1,1,8,1,1,1,2],
+    [0,2,1,1,1,1,1,2,0],
+    [0,2,2,2,2,2,2,2,0],
+  ],pal:HUSKY_BOSS}
+];
+
+// Build sprite functions
+const CAT_DRAW = CAT_SPRITES.map(s=>makeKenneySprite(s.px, s.pal));
+const NORM_HUSKY = makeKenneySprite(HUSKY_SPRITES[0].px, HUSKY_SPRITES[0].pal);
+const BOSS_HUSKY = makeKenneySprite(HUSKY_SPRITES[1].px, HUSKY_SPRITES[1].pal);
+
+function drawKenneyCat(cx,cy,type,scale,hpR) {
+  const s = scale;
+  CAT_DRAW[type](CX, cx, cy, s);
+  // Shadow
+  CX.fillStyle='rgba(0,0,0,0.15)';
+  CX.beginPath(); CX.ellipse(cx+2, cy+s*0.4, s*0.35, s*0.08, 0, 0, Math.PI*2); CX.fill();
+  // HP bar
+  if(hpR<1) {
+    const bw=s*0.8, bh=s*0.12;
+    CX.fillStyle='rgba(0,0,0,0.3)'; CX.fillRect(cx-bw/2, cy-s*0.55, bw, bh);
+    CX.fillStyle=hpR>0.5?'#44CC44':hpR>0.25?'#FFAA00':'#FF4444';
+    CX.fillRect(cx-bw/2, cy-s*0.55, bw*hpR, bh);
+  }
+}
+
+function drawKenneyHusky(cx,cy,isBoss,scale,hpR) {
+  const s = scale;
+  if(isBoss) BOSS_HUSKY(CX, cx, cy, s);
+  else NORM_HUSKY(CX, cx, cy, s);
+  CX.fillStyle='rgba(0,0,0,0.15)';
+  CX.beginPath(); CX.ellipse(cx+2, cy+s*0.4, s*0.35, s*0.08, 0, 0, Math.PI*2); CX.fill();
+  if(hpR<1) {
+    const bw=s*0.8, bh=s*0.12;
+    CX.fillStyle='rgba(0,0,0,0.3)'; CX.fillRect(cx-bw/2, cy-s*0.55, bw, bh);
+    CX.fillStyle=hpR>0.5?'#44CC44':hpR>0.25?'#FFAA00':'#FF4444';
+    CX.fillRect(cx-bw/2, cy-s*0.55, bw*hpR, bh);
+  }
+}
+
 /* ============================================================
-   CAT TYPES (7 units - balanced for playability)
+   CAT TYPES (BIG units - Kenney pixel style)
    ============================================================ */
 const CAT_TYPES=[
-  {name:'小橘貓', cost:80,  hp:400, atk:40,  range:32, spd:2.0, cd:90,  size:18, desc:'基本步兵'},
-  {name:'金冠貓', cost:150, hp:1800,atk:15,  range:26, spd:1.3, cd:150, size:22, desc:'肉盾坦克'},
-  {name:'圍兜貓', cost:250, hp:350, atk:130, range:28, spd:1.6, cd:120, size:20, desc:'近戰輸出'},
-  {name:'招財貓', cost:400, hp:500, atk:180, range:60, spd:1.0, cd:180, size:18, desc:'遠程射手'},
-  {name:'虎斑貓', cost:350, hp:300, atk:80,  range:24, spd:4.0, cd:80,  size:19, desc:'高速突擊'},
-  {name:'飛天貓', cost:600, hp:250, atk:220, range:65, spd:2.5, cd:200, size:17, desc:'精準打擊'},
-  {name:'貓皇帝', cost:1200,hp:2500,atk:600, range:42, spd:1.8, cd:400, size:28, desc:'終極戰力'}
+  {name:'小橘貓', cost:80,  hp:400, atk:40,  range:32, spd:2.0, cd:90,  scale:24, desc:'基本步兵'},
+  {name:'金冠貓', cost:150, hp:1800,atk:15,  range:26, spd:1.3, cd:150, scale:32, desc:'肉盾坦克'},
+  {name:'圍兜貓', cost:250, hp:350, atk:130, range:28, spd:1.6, cd:120, scale:28, desc:'近戰輸出'},
+  {name:'招財貓', cost:400, hp:500, atk:180, range:60, spd:1.0, cd:180, scale:26, desc:'遠程射手'},
+  {name:'虎斑貓', cost:350, hp:300, atk:80,  range:24, spd:4.0, cd:80,  scale:26, desc:'高速突擊'},
+  {name:'飛天貓', cost:600, hp:250, atk:220, range:65, spd:2.5, cd:200, scale:24, desc:'精準打擊'},
+  {name:'貓皇帝', cost:1200,hp:2500,atk:600, range:42, spd:1.8, cd:400, scale:40, desc:'終極戰力'}
 ];
 const CAT_CD=new Array(CAT_TYPES.length).fill(0);
 
 /* ============================================================
-   ENEMY TYPES (CEO HUSKY ARMY)
+   ENEMY TYPES
    ============================================================ */
 const ENEMY_TYPES=[
-  {name:'實習二哈', hp:200, atk:20, spd:1.6, score:10},
-  {name:'經理二哈', hp:500, atk:40, spd:2.0, score:25},
-  {name:'副總二哈', hp:1000,atk:60, spd:1.3, score:50},
-  {name:'執行二哈', hp:1500,atk:120,spd:1.0, score:80},
-  {name:'變種二哈', hp:3000,atk:200,spd:0.8, score:150},
-  {name:'CEO大魔王', hp:8000,atk:400,spd:0.6, score:500}
+  {name:'實習二哈', hp:200, atk:20, spd:1.6, score:10, isBoss:false, scale:24},
+  {name:'經理二哈', hp:500, atk:40, spd:2.0, score:25, isBoss:false, scale:26},
+  {name:'副總二哈', hp:1000,atk:60, spd:1.3, score:50, isBoss:false, scale:28},
+  {name:'執行二哈', hp:1500,atk:120,spd:1.0, score:80, isBoss:false, scale:28},
+  {name:'變種二哈', hp:3000,atk:200,spd:0.8, score:150,isBoss:false, scale:30},
+  {name:'CEO大魔王', hp:8000,atk:400,spd:0.6, score:500,isBoss:true,  scale:48}
 ];
 
 /* ============================================================
@@ -79,633 +250,302 @@ const WAVES=[
   {enemies:[[5,1]],                   reward:1000,desc:'👑 CEO大魔王'}
 ];
 
-/* ============================================================
-   KENNEY-STYLE DRAWING FUNCTIONS
-   ============================================================ */
-
-// === KENNEY ORANGE CAT ===
-function drawKenneyCat(cx, cy, s, hpR, isPlayer) {
-  CX.save(); CX.translate(cx, cy);
-  const body = isPlayer ? '#FFA451' : '#E07030';
-  const dark = isPlayer ? '#D48030' : '#C06020';
-
-  // Shadow
-  CX.fillStyle='rgba(0,0,0,0.12)';
-  CX.beginPath(); CX.ellipse(2, s*0.55, s*0.6, s*0.12, 0, 0, Math.PI*2); CX.fill();
-
-  // Body
-  CX.fillStyle = body;
-  fillRnd(-s*0.42, -s*0.1, s*0.84, s*0.48, s*0.15);
-
-  // Belly
-  if(isPlayer) {
-    CX.fillStyle = '#FFE0B0';
-    fillRnd(-s*0.25, 0, s*0.5, s*0.28, s*0.08);
-  }
-
-  // Legs
-  const la = Math.sin(G.frame*0.15)*0.03*s;
-  CX.fillStyle = dark;
-  fillRnd(-s*0.32, s*0.32, s*0.14, s*0.2+la, 3);
-  fillRnd(-s*0.1,  s*0.32, s*0.14, s*0.2-la, 3);
-  fillRnd( s*0.1,  s*0.32, s*0.14, s*0.2+la, 3);
-  fillRnd( s*0.28, s*0.32, s*0.14, s*0.2-la, 3);
-
-  // Head
-  CX.fillStyle = body;
-  CX.beginPath(); CX.arc(0, -s*0.40, s*0.38, 0, Math.PI*2); CX.fill();
-
-  // Ears
-  CX.fillStyle = isPlayer ? '#FF8C42' : '#D06020';
-  CX.beginPath(); CX.moveTo(-s*0.25,-s*0.55); CX.lineTo(-s*0.32,-s*0.90); CX.lineTo(-s*0.08,-s*0.55); CX.fill();
-  CX.beginPath(); CX.moveTo( s*0.25,-s*0.55); CX.lineTo( s*0.32,-s*0.90); CX.lineTo( s*0.08,-s*0.55); CX.fill();
-  CX.fillStyle = '#FFB0B0';
-  CX.beginPath(); CX.moveTo(-s*0.22,-s*0.58); CX.lineTo(-s*0.27,-s*0.80); CX.lineTo(-s*0.12,-s*0.58); CX.fill();
-  CX.beginPath(); CX.moveTo( s*0.22,-s*0.58); CX.lineTo( s*0.27,-s*0.80); CX.lineTo( s*0.12,-s*0.58); CX.fill();
-
-  // Crown
-  if(isPlayer) {
-    CX.fillStyle='#FFD700';
-    CX.beginPath();
-    CX.moveTo(-s*0.35,-s*0.62); CX.lineTo(-s*0.35,-s*0.85);
-    CX.lineTo(-s*0.23,-s*0.70); CX.lineTo(-s*0.12,-s*0.88);
-    CX.lineTo( 0,    -s*0.68); CX.lineTo( s*0.12,-s*0.88);
-    CX.lineTo( s*0.23,-s*0.70); CX.lineTo( s*0.35,-s*0.85);
-    CX.lineTo( s*0.35,-s*0.62); CX.closePath(); CX.fill();
-    CX.fillStyle='#FF4444';
-    CX.beginPath(); CX.arc(-s*0.14,-s*0.76, s*0.035,0,Math.PI*2); CX.fill();
-    CX.beginPath(); CX.arc( 0,    -s*0.78, s*0.035,0,Math.PI*2); CX.fill();
-    CX.beginPath(); CX.arc( s*0.14,-s*0.76, s*0.035,0,Math.PI*2); CX.fill();
-  }
-
-  // Eyes
-  const ey = -s*0.38;
-  CX.fillStyle='#FFF'; CX.beginPath(); CX.ellipse(-s*0.14,ey, s*0.10,s*0.09,0,0,Math.PI*2); CX.fill();
-  CX.beginPath(); CX.ellipse( s*0.14,ey, s*0.10,s*0.09,0,0,Math.PI*2); CX.fill();
-  CX.fillStyle='#333';
-  const dir = isPlayer?1:-1;
-  CX.beginPath(); CX.arc(-s*0.14+dir*0.02, ey, s*0.05,0,Math.PI*2); CX.fill();
-  CX.beginPath(); CX.arc( s*0.14+dir*0.02, ey, s*0.05,0,Math.PI*2); CX.fill();
-  CX.fillStyle='#FFF';
-  CX.beginPath(); CX.arc(-s*0.12+dir*0.02, ey-s*0.02, s*0.025,0,Math.PI*2); CX.fill();
-  CX.beginPath(); CX.arc( s*0.16+dir*0.02, ey-s*0.02, s*0.025,0,Math.PI*2); CX.fill();
-
-  // Nose
-  CX.fillStyle='#FF7FAA';
-  CX.beginPath(); CX.moveTo(-s*0.04,ey+s*0.08); CX.lineTo(s*0.04,ey+s*0.08); CX.lineTo(0,ey+s*0.12); CX.closePath(); CX.fill();
-
-  // Mouth
-  if(isPlayer) {
-    CX.strokeStyle='#555'; CX.lineWidth=1;
-    CX.beginPath(); CX.arc(0,ey+s*0.11,s*0.05,0.2,Math.PI-0.2); CX.stroke();
-  }
-
-  // Whiskers
-  CX.strokeStyle='rgba(0,0,0,0.2)'; CX.lineWidth=0.8;
-  for(let side=-1;side<=1;side+=2) {
-    for(let w=0;w<3;w++) {
-      CX.beginPath(); CX.moveTo(side*s*0.20, ey+w*0.04*s);
-      CX.lineTo(side*s*0.42, ey+(w-1)*0.06*s); CX.stroke();
-    }
-  }
-
-  // Tail
-  CX.strokeStyle=dark; CX.lineWidth=s*0.12;
-  CX.lineCap='round';
-  CX.beginPath(); CX.moveTo(-dir*s*0.30, s*0.15);
-  CX.quadraticCurveTo(-dir*s*0.55, -s*0.15, -dir*s*0.50, -s*0.30);
-  CX.stroke();
-  CX.fillStyle=isPlayer?'#FFF':'#DDD';
-  CX.beginPath(); CX.arc(-dir*s*0.50, -s*0.30, s*0.07, 0, Math.PI*2); CX.fill();
-
-  // HP bar
-  if(hpR<1) {
-    const bw=s*1.4, bh=3;
-    CX.fillStyle='rgba(0,0,0,0.3)'; CX.fillRect(-bw/2,-s*0.95,bw,bh);
-    CX.fillStyle=hpR>0.5?'#44CC44':hpR>0.25?'#FFAA00':'#FF4444';
-    CX.fillRect(-bw/2,-s*0.95,bw*hpR,bh);
-  }
-  CX.restore();
+// ===== HELPERS =====
+function rRect(x,y,w,h,r) {
+  if(r>w/2)r=w/2;if(r>h/2)r=h/2;
+  CX.beginPath(); CX.moveTo(x+r,y); CX.lineTo(x+w-r,y);
+  CX.quadraticCurveTo(x+w,y,x+w,y+r); CX.lineTo(x+w,y+h-r);
+  CX.quadraticCurveTo(x+w,y+h,x+w-r,y+h); CX.lineTo(x+r,y+h);
+  CX.quadraticCurveTo(x,y+h,x,y+h-r); CX.lineTo(x,y+r);
+  CX.quadraticCurveTo(x,y,x+r,y); CX.closePath(); CX.fill();
 }
 
-// === KENNEY CEO HUSKY ===
-function drawKenneyHusky(cx, cy, s, hpR) {
-  CX.save(); CX.translate(cx, cy);
-  CX.fillStyle='rgba(0,0,0,0.12)';
-  CX.beginPath(); CX.ellipse(2, s*0.55, s*0.6, s*0.12, 0, 0, Math.PI*2); CX.fill();
+function addParticles(x,y,n,c){for(let i=0;i<n;i++)G.particles.push({x,y,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4-2,life:20+Math.random()*20,maxL:40,color:c,size:2+Math.random()*3});}
 
-  CX.fillStyle='#A0A0B0';
-  fillRnd(-s*0.44, -s*0.1, s*0.88, s*0.50, s*0.15);
-  CX.fillStyle='#E8E8F0';
-  fillRnd(-s*0.25, s*0.02, s*0.50, s*0.30, s*0.10);
-
-  const la=Math.sin(G.frame*0.15)*0.03*s;
-  CX.fillStyle='#888898';
-  fillRnd(-s*0.34, s*0.34, s*0.14, s*0.2+la, 3);
-  fillRnd(-s*0.12, s*0.34, s*0.14, s*0.2-la, 3);
-  fillRnd( s*0.12, s*0.34, s*0.14, s*0.2+la, 3);
-  fillRnd( s*0.30, s*0.34, s*0.14, s*0.2-la, 3);
-  CX.fillStyle='#E8E8F0';
-  fillRnd(-s*0.34, s*0.46, s*0.14, s*0.08, 3);
-  fillRnd(-s*0.12, s*0.46, s*0.14, s*0.08, 3);
-  fillRnd( s*0.12, s*0.46, s*0.14, s*0.08, 3);
-  fillRnd( s*0.30, s*0.46, s*0.14, s*0.08, 3);
-
-  CX.fillStyle='#B0B0C0';
-  CX.beginPath(); CX.arc(0, -s*0.42, s*0.40, 0, Math.PI*2); CX.fill();
-  CX.fillStyle='#F0F0F8';
-  CX.beginPath(); CX.ellipse(0, -s*0.36, s*0.30, s*0.26, 0, 0, Math.PI*2); CX.fill();
-
-  CX.fillStyle='#9090A0';
-  CX.beginPath(); CX.moveTo(-s*0.26,-s*0.55); CX.lineTo(-s*0.24,-s*0.95); CX.lineTo(-s*0.06,-s*0.55); CX.fill();
-  CX.beginPath(); CX.moveTo( s*0.26,-s*0.55); CX.lineTo( s*0.24,-s*0.95); CX.lineTo( s*0.06,-s*0.55); CX.fill();
-  CX.fillStyle='#FFB0B0';
-  CX.beginPath(); CX.moveTo(-s*0.21,-s*0.60); CX.lineTo(-s*0.20,-s*0.85); CX.lineTo(-s*0.09,-s*0.60); CX.fill();
-  CX.beginPath(); CX.moveTo( s*0.21,-s*0.60); CX.lineTo( s*0.20,-s*0.85); CX.lineTo( s*0.09,-s*0.60); CX.fill();
-
-  CX.fillStyle='#222';
-  fillRnd(-s*0.32, -s*0.57, s*0.64, s*0.10, 3);
-  CX.fillStyle='#FFD700';
-  CX.font='bold '+(s*0.16)+'px sans-serif'; CX.textAlign='center'; CX.textBaseline='middle';
-  CX.fillText('CEO',0,-s*0.52);
-  CX.textBaseline='alphabetic';
-
-  const ey=-s*0.38;
-  CX.fillStyle='#87CEEB';
-  CX.beginPath(); CX.ellipse(-s*0.15,ey, s*0.10,s*0.08,0,0,Math.PI*2); CX.fill();
-  CX.beginPath(); CX.ellipse( s*0.15,ey, s*0.10,s*0.08,0,0,Math.PI*2); CX.fill();
-  CX.fillStyle='#333';
-  CX.beginPath(); CX.arc(-s*0.15,ey, s*0.05,0,Math.PI*2); CX.fill();
-  CX.beginPath(); CX.arc( s*0.15,ey, s*0.05,0,Math.PI*2); CX.fill();
-
-  CX.fillStyle='#FF6B8A';
-  CX.beginPath(); CX.ellipse(0, ey+s*0.16, s*0.06, s*0.10, 0, 0, Math.PI*2); CX.fill();
-  CX.fillStyle='#FF99A8';
-  CX.beginPath(); CX.ellipse(0, ey+s*0.18, s*0.04, s*0.06, 0, 0, Math.PI*2); CX.fill();
-
-  CX.fillStyle='#333';
-  CX.beginPath(); CX.ellipse(0, ey+s*0.09, s*0.05, s*0.04, 0, 0, Math.PI*2); CX.fill();
-
-  CX.strokeStyle='#9090A0'; CX.lineWidth=s*0.12;
-  CX.lineCap='round';
-  CX.beginPath(); CX.moveTo(s*0.30, s*0.15);
-  CX.quadraticCurveTo(s*0.55, -s*0.05, s*0.58, 0);
-  CX.stroke();
-  CX.fillStyle='#E8E8F0';
-  CX.beginPath(); CX.arc(s*0.58, 0, s*0.08, 0, Math.PI*2); CX.fill();
-
-  if(hpR<1) {
-    const bw=s*1.4, bh=3;
-    CX.fillStyle='rgba(0,0,0,0.3)'; CX.fillRect(-bw/2,-s*0.95,bw,bh);
-    CX.fillStyle=hpR>0.5?'#44CC44':hpR>0.25?'#FFAA00':'#FF4444';
-    CX.fillRect(-bw/2,-s*0.95,bw*hpR,bh);
-  }
-  CX.restore();
+// ===== SPAWNING =====
+function spawnCat(){
+  const i=G.selectedCat,ct=CAT_TYPES[i];
+  if(G.money<ct.cost||CAT_CD[i]>0)return;
+  G.money-=ct.cost; CAT_CD[i]=ct.cd;
+  const lanes=[0,1,2];
+  const lane=lanes[Math.floor(Math.random()*lanes.length)];
+  G.cats.push({x:65,y:355+lane*18,vx:ct.spd,hp:ct.hp,hpMax:ct.hp,atk:ct.atk,range:ct.range,atkCD:0,atkInt:35,type:i,scale:ct.scale,state:'walk',kills:0,level:1,hitFlash:0});
+  addParticles(65,365,8,'#FFD700');
 }
 
-/* ============================================================
-   HELPERS
-   ============================================================ */
-function fillRnd(x,y,w,h,r) {
-  if(r>w/2)r=w/2; if(r>h/2)r=h/2;
-  CX.beginPath();
-  CX.moveTo(x+r,y); CX.lineTo(x+w-r,y);
-  CX.quadraticCurveTo(x+w,y,x+w,y+r);
-  CX.lineTo(x+w,y+h-r);
-  CX.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  CX.lineTo(x+r,y+h);
-  CX.quadraticCurveTo(x,y+h,x,y+h-r);
-  CX.lineTo(x,y+r);
-  CX.quadraticCurveTo(x,y,x+r,y);
-  CX.closePath(); CX.fill();
+function spawnEnemy(typeIdx){
+  const et=ENEMY_TYPES[typeIdx],ws=1+G.wave*0.15;
+  const hp=Math.floor(et.hp*ws),atk=Math.floor(et.atk*(1+G.wave*0.08));
+  const lanes=[0,1,2];
+  const lane=lanes[Math.floor(Math.random()*lanes.length)];
+  G.enemies.push({x:395,y:355+lane*18,vx:-et.spd,hp,hpMax:hp,atk,atkCD:0,atkInt:45,type:typeIdx,state:'walk',scale:et.scale,isBoss:et.isBoss,score:et.score,hitFlash:0});
 }
 
-function addParticles(x,y,n,c) {
-  for(let i=0;i<n;i++) G.particles.push({
-    x,y, vx:(Math.random()-0.5)*4, vy:(Math.random()-0.5)*4-2,
-    life:20+Math.random()*20, maxL:40, color:c, size:2+Math.random()*3
-  });
+// ===== WAVES =====
+function startWave(){
+  if(G.wave>=G.totalWaves)return;
+  G.waveEnemies=[];
+  for(const[t,c]of WAVES[G.wave].enemies)for(let i=0;i<c;i++)G.waveEnemies.push(t);
+  for(let i=G.waveEnemies.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[G.waveEnemies[i],G.waveEnemies[j]]=[G.waveEnemies[j],G.waveEnemies[i]];}
+  G.waveProgress=0;G.waveState='spawning';G.spawnTimer=0;
 }
 
-/* ============================================================
-   SPAWNING
-   ============================================================ */
-function spawnCat() {
-  const i=G.selectedCat, ct=CAT_TYPES[i];
-  if(G.money<ct.cost || CAT_CD[i]>0) return;
-  G.money -= ct.cost;
-  CAT_CD[i] = ct.cd;
-  G.cats.push({
-    x:65, y:380-Math.random()*40, vx:ct.spd,
-    hp:ct.hp, hpMax:ct.hp, atk:ct.atk, range:ct.range,
-    atkCD:0, atkInt:35, type:i, size:ct.size, state:'walk',
-    kills:0, level:1
-  });
-  addParticles(65,380,8,'#FFD700');
-}
-
-function spawnEnemy(typeIdx) {
-  const et=ENEMY_TYPES[typeIdx];
-  const waveScale = 1 + G.wave * 0.15;
-  const hp = Math.floor(et.hp * waveScale);
-  const atk = Math.floor(et.atk * (1 + G.wave * 0.08));
-  G.enemies.push({
-    x:395, y:370-Math.random()*40, vx:-et.spd,
-    hp, hpMax:hp, atk, atkCD:0, atkInt:45,
-    type:typeIdx, state:'walk', size:typeIdx===5?32:16, score:et.score
-  });
-}
-
-/* ============================================================
-   WAVE MANAGEMENT
-   ============================================================ */
-function startWave() {
-  if(G.wave >= G.totalWaves) return;
-  const waveData = WAVES[G.wave];
-  G.waveEnemies = [];
-  for(const [type, count] of waveData.enemies) {
-    for(let i=0; i<count; i++) G.waveEnemies.push(type);
-  }
-  for(let i=G.waveEnemies.length-1; i>0; i--) {
-    const j=Math.floor(Math.random()*(i+1));
-    [G.waveEnemies[i], G.waveEnemies[j]] = [G.waveEnemies[j], G.waveEnemies[i]];
-  }
-  G.waveProgress = 0;
-  G.waveState = 'spawning';
-  G.spawnTimer = 0;
-}
-
-/* ============================================================
-   UPDATE
-   ============================================================ */
-function update() {
-  if(G.pause || G.scene!=='playing') return;
+// ===== UPDATE =====
+function update(){
+  if(G.pause||G.scene!=='playing')return;
   G.frame++;
-  G.energy = Math.min(G.maxEnergy, G.energy+G.energyRegen);
-  G.money = Math.min(9999, G.money+G.moneyRegen);
-  for(let i=0;i<CAT_TYPES.length;i++) if(CAT_CD[i]>0) CAT_CD[i]--;
+  G.energy=Math.min(G.maxEnergy,G.energy+G.energyRegen);
+  G.money=Math.min(9999,G.money+G.moneyRegen);
+  for(let i=0;i<CAT_TYPES.length;i++)if(CAT_CD[i]>0)CAT_CD[i]--;
 
-  // === WAVE LOGIC ===
-  if(G.waveState === 'idle') {
-    G.waveTimer++;
-    if(G.waveTimer > 120) { G.waveTimer=0; startWave(); }
-  }
-  else if(G.waveState === 'spawning') {
+  // Waves
+  if(G.waveState==='idle'){G.waveTimer++;if(G.waveTimer>120){G.waveTimer=0;startWave();}}
+  else if(G.waveState==='spawning'){
     G.spawnTimer++;
-    const spawnGap = Math.max(25, 55 - G.wave*2);
-    if(G.spawnTimer >= spawnGap && G.waveProgress < G.waveEnemies.length) {
-      G.spawnTimer = 0;
-      spawnEnemy(G.waveEnemies[G.waveProgress]);
-      G.waveProgress++;
+    if(G.spawnTimer>=Math.max(25,55-G.wave*2)&&G.waveProgress<G.waveEnemies.length){
+      G.spawnTimer=0;spawnEnemy(G.waveEnemies[G.waveProgress]);G.waveProgress++;
     }
-    if(G.waveProgress >= G.waveEnemies.length && G.enemies.length === 0) {
-      G.waveState = 'idle';
-      G.waveTimer = 0;
-      const reward = WAVES[G.wave].reward;
-      G.money = Math.min(9999, G.money + reward);
-      G.enemyBaseHp -= 300;
-      if(G.enemyBaseHp < 0) G.enemyBaseHp = 0;
-      addParticles(385, 360, 25, '#FF4444');
-      G.wave++;
-      if(G.wave >= G.totalWaves) {
-        G.waveState = 'final';
-      }
+    if(G.waveProgress>=G.waveEnemies.length&&G.enemies.length===0){
+      G.waveState='idle';G.waveTimer=0;
+      G.money=Math.min(9999,G.money+WAVES[G.wave].reward);
+      G.enemyBaseHp-=300;if(G.enemyBaseHp<0)G.enemyBaseHp=0;
+      addParticles(385,365,25,'#FF4444');G.wave++;
+      if(G.wave>=G.totalWaves)G.waveState='final';
     }
   }
-  else if(G.waveState === 'final') {
-    for(let i=G.cats.length-1;i>=0;i--) {
-      const c=G.cats[i];
-      c.vx = CAT_TYPES[c.type].spd * 0.8;
-      c.x += c.vx;
-      if(c.x > 385) {
-        G.enemyBaseHp -= c.atk * 2;
-        addParticles(385, 360, 8, '#FF6B35');
-        G.cats.splice(i,1);
-        if(G.enemyBaseHp <= 0) { G.enemyBaseHp = 0; G.scene='win'; G.gameWon=true; }
-      }
+  else if(G.waveState==='final'){
+    for(let i=G.cats.length-1;i>=0;i--){
+      const c=G.cats[i];c.vx=CAT_TYPES[c.type].spd*0.8;c.x+=c.vx;
+      if(c.x>385){G.enemyBaseHp-=c.atk*2;addParticles(385,365,8,'#FF6B35');G.cats.splice(i,1);if(G.enemyBaseHp<=0){G.enemyBaseHp=0;G.scene='win';G.gameWon=true;}}
     }
   }
 
-  // === UPDATE CATS ===
-  for(let i=G.cats.length-1;i>=0;i--) {
+  // === CATS ===
+  for(let i=G.cats.length-1;i>=0;i--){
     const c=G.cats[i];
-    if(c.state==='dead') { G.cats.splice(i,1); continue; }
-
-    let target=null, md=999;
-    G.enemies.forEach(e=>{ const d=e.x-c.x; if(d>0 && d<md) { md=d; target=e; } });
-
-    if(target && md < c.range+10) {
-      c.vx=0; c.atkCD--;
-      if(c.atkCD<=0) {
-        c.atkCD=c.atkInt;
-        target.hp -= c.atk;
-        addParticles(target.x,target.y-5,4,'#FFD700');
-        if(target.hp<=0) {
+    if(c.hitFlash>0)c.hitFlash--;
+    if(c.state==='dead'){G.cats.splice(i,1);continue;}
+    let target=null,md=999;
+    G.enemies.forEach(e=>{const d=e.x-c.x;if(d>0&&d<md){md=d;target=e;}});
+    if(target&&md<Math.max(c.range+10,35)){
+      c.vx=0;c.atkCD--;
+      if(c.atkCD<=0){c.atkCD=c.atkInt;target.hp-=c.atk;target.hitFlash=6;addParticles(target.x,target.y-5,6,'#FFD700');
+        G.dmgTexts.push({x:target.x,y:target.y-15,text:'-'+c.atk,life:20,color:'#FF4444'});
+        if(target.hp<=0){
           const idx=G.enemies.indexOf(target);
-          if(idx>-1) {
-            G.money = Math.min(9999, G.money + ENEMY_TYPES[target.type].score*2);
-            G.enemiesKilled++;
-            c.kills++;
-            if(c.kills % 5 === 0 && c.level < 5) {
-              c.level++;
-              c.atk = Math.floor(c.atk * 1.2);
-              c.hpMax = Math.floor(c.hpMax * 1.15);
-              c.hp = c.hpMax;
-              addParticles(c.x, c.y-15, 15, '#00FF88');
+          if(idx>-1){
+            G.money=Math.min(9999,G.money+ENEMY_TYPES[target.type].score*2);
+            G.enemiesKilled++;c.kills++;
+            if(c.kills%5===0&&c.level<5){
+              c.level++;c.atk=Math.floor(c.atk*1.2);c.hpMax=Math.floor(c.hpMax*1.15);c.hp=c.hpMax;
+              addParticles(c.x,c.y-15,15,'#00FF88');
             }
-            G.enemies.splice(idx,1);
-            addParticles(target.x,target.y,12,target.type===5?'#FF4444':'#FFD700');
+            G.enemies.splice(idx,1);addParticles(target.x,target.y,12,target.type===5?'#FF4444':'#FFD700');
           }
         }
       }
-    } else {
-      c.vx = CAT_TYPES[c.type].spd;
-      c.x += c.vx;
-    }
-    if(c.x>390) {
-      G.enemyBaseHp -= c.atk * 0.4;
-      if(G.enemyBaseHp<0) G.enemyBaseHp=0;
-      addParticles(390,360,8,'#FF6B35');
-      G.cats.splice(i,1);
-      if(G.enemyBaseHp<=0 && !G.gameWon) { G.scene='win'; G.gameWon=true; }
-    }
-    if(c.hp<=0) {
-      addParticles(c.x,c.y,10,'#FF6666');
-      G.catsKilled++; G.cats.splice(i,1);
-    }
+    } else {c.vx=CAT_TYPES[c.type].spd;c.x+=c.vx;}
+    if(c.x>390){G.enemyBaseHp-=c.atk*0.4;if(G.enemyBaseHp<0)G.enemyBaseHp=0;addParticles(390,365,8,'#FF6B35');G.cats.splice(i,1);if(G.enemyBaseHp<=0&&!G.gameWon){G.scene='win';G.gameWon=true;}}
+    if(c.hp<=0){addParticles(c.x,c.y,10,'#FF6666');G.catsKilled++;G.cats.splice(i,1);}
   }
 
-  // === UPDATE ENEMIES ===
-  for(let i=G.enemies.length-1;i>=0;i--) {
+  // === ENEMIES ===
+  for(let i=G.enemies.length-1;i>=0;i--){
     const e=G.enemies[i];
-    let target=null, md=999;
-    G.cats.forEach(c=>{ const d=c.x-e.x; if(d>0 && d<md) { md=d; target=c; } });
-
-    if(target && md<22) {
-      e.vx=0; e.atkCD--;
-      if(e.atkCD<=0) {
-        e.atkCD=e.atkInt;
-        target.hp -= e.atk;
-        if(target.hp<=0) { target.state='dead'; G.catsKilled++; addParticles(target.x,target.y,10,'#FF6666'); }
-      }
-    } else {
-      e.vx = -(ENEMY_TYPES[e.type] ? ENEMY_TYPES[e.type].spd : 1.5);
-      e.x += e.vx;
-    }
-    if(e.x<35) {
-      G.baseHp -= e.atk;
-      if(G.baseHp<0) G.baseHp=0;
-      G.enemies.splice(i,1);
-      addParticles(35,360,8,'#FF4444');
-    }
+    if(e.hitFlash>0)e.hitFlash--;
+    let target=null,md=999;
+    G.cats.forEach(c=>{const d=c.x-e.x;if(d>0&&d<md){md=d;target=c;}});
+    if(target&&md<35){
+      e.vx=0;e.atkCD--;
+      if(e.atkCD<=0){e.atkCD=e.atkInt;target.hp-=e.atk;target.hitFlash=6;
+        G.dmgTexts.push({x:target.x,y:target.y-15,text:'-'+e.atk,life:20,color:'#FF8888'});
+        if(target.hp<=0){target.state='dead';G.catsKilled++;addParticles(target.x,target.y,10,'#FF6666');}}
+    } else {e.vx=-(ENEMY_TYPES[e.type]?ENEMY_TYPES[e.type].spd:1.5);e.x+=e.vx;}
+    if(e.x<35){G.baseHp-=e.atk;if(G.baseHp<0)G.baseHp=0;G.enemies.splice(i,1);addParticles(35,365,8,'#FF4444');}
   }
 
-  // === PARTICLES ===
-  for(let i=G.particles.length-1;i>=0;i--) {
-    const p=G.particles[i];
-    p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life--;
-    if(p.life<=0) G.particles.splice(i,1);
-  }
+  // Particles + damage texts
+  for(let i=G.particles.length-1;i>=0;i--){const p=G.particles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.1;p.life--;if(p.life<=0)G.particles.splice(i,1);}
+  for(let i=G.dmgTexts.length-1;i>=0;i--){const d=G.dmgTexts[i];d.y-=1;d.life--;if(d.life<=0)G.dmgTexts.splice(i,1);}
 
-  if(G.baseHp<=0) G.scene='gameover';
-  if(G.enemyBaseHp<=0 && !G.gameWon) { G.scene='win'; G.gameWon=true; }
+  if(G.baseHp<=0)G.scene='gameover';
+  if(G.enemyBaseHp<=0&&!G.gameWon){G.scene='win';G.gameWon=true;}
 }
 
-/* ============================================================
-   DRAW FUNCTIONS
-   ============================================================ */
-function drawBG() {
+// ===== DRAW ====
+function drawBG(){
   const g=CX.createLinearGradient(0,0,0,500);
-  g.addColorStop(0,'#A8D8FF'); g.addColorStop(0.5,'#C8E8FF'); g.addColorStop(1,'#FFE0B8');
-  CX.fillStyle=g; CX.fillRect(0,0,W,500);
-
-  CX.fillStyle='rgba(255,255,255,0.6)';
+  g.addColorStop(0,'#A8D8FF');g.addColorStop(.5,'#C8E8FF');g.addColorStop(1,'#FFE0B8');
+  CX.fillStyle=g;CX.fillRect(0,0,W,500);
+  CX.fillStyle='rgba(255,255,255,.6)';
   [[60,70,25],[170,50,20],[360,80,22],[90,120,18],[400,60,24]].forEach(([cx,cy,r])=>{
     const ox=Math.sin(G.frame*0.002+cx)*15;
-    CX.beginPath(); CX.arc(cx+ox,cy,r,0,Math.PI*2); CX.fill();
-    CX.beginPath(); CX.arc(cx+ox+r*0.8,cy-r*0.3,r*0.7,0,Math.PI*2); CX.fill();
-    CX.beginPath(); CX.arc(cx+ox+r*1.2,cy+r*0.2,r*0.8,0,Math.PI*2); CX.fill();
+    CX.beginPath();CX.arc(cx+ox,cy,r,0,Math.PI*2);CX.fill();
+    CX.beginPath();CX.arc(cx+ox+r*.8,cy-r*.3,r*.7,0,Math.PI*2);CX.fill();
+    CX.beginPath();CX.arc(cx+ox+r*1.2,cy+r*.2,r*.8,0,Math.PI*2);CX.fill();
   });
-
-  CX.fillStyle='#80C060';
-  CX.fillRect(0,420,W,280);
-  CX.fillStyle='#70A850';
-  CX.fillRect(0,420,W,4);
-  for(let x=0;x<W;x+=8) CX.fillRect(x,420,2,3+Math.sin(x*0.3)*3);
+  CX.fillStyle='#80C060';CX.fillRect(0,420,W,280);
+  CX.fillStyle='#70A850';CX.fillRect(0,420,W,4);
+  for(let x=0;x<W;x+=8)CX.fillRect(x,420,2,3+Math.sin(x*.3)*3);
 }
 
-function drawBattlefield() {
-  CX.fillStyle='#C8A060';
-  CX.fillRect(75,340,350,80);
-  CX.fillStyle='#B89050';
-  for(let x=75;x<425;x+=20) CX.fillRect(x,340,2,80);
+function drawBattlefield(){
+  // Single path - one lane
+  CX.fillStyle='#C8A060';CX.fillRect(60,340,380,80);
+  CX.fillStyle='#B89050';for(let x=60;x<440;x+=20)CX.fillRect(x,340,2,80);
+  // Borders
+  CX.fillStyle='#A08040';CX.fillRect(60,339,380,3);CX.fillRect(60,417,380,3);
 
-  CX.fillStyle='rgba(255,255,255,0.15)';
-  // Single path (one lane) - removed lane dividers
+  // Player base
+  CX.fillStyle='#8B5E3C';rRect(4,320,66,85,8);CX.fillStyle='#A07050';rRect(2,315,70,10,4);
+  CX.font='32px sans-serif';CX.textAlign='center';CX.textBaseline='middle';
+  CX.fillText('🐱',37,362);
+  // Enemy base
+  CX.fillStyle='#404050';rRect(410,320,66,85,8);CX.fillStyle='#505060';rRect(408,315,70,10,4);
+  CX.fillText('🐶',443,362);
 
-  // Player base (bigger)
-  CX.fillStyle='#8B5E3C'; fillRnd(4, 320, 66, 85, 8);
-  CX.fillStyle='#A07050'; fillRnd(2, 315, 70, 10, 4);
-  CX.font='34px sans-serif'; CX.textAlign='center'; CX.textBaseline='middle';
-  CX.fillText('🐱', 37, 362);
-
-  // Enemy base (bigger)
-  CX.fillStyle='#404050'; fillRnd(410, 320, 66, 85, 8);
-  CX.fillStyle='#505060'; fillRnd(408, 315, 70, 10, 4);
-  CX.font='34px sans-serif';
-  CX.fillText('🐶', 443, 362);
-
-  // HP indicators
-  CX.fillStyle='rgba(0,0,0,0.5)'; fillRnd(8, 300, 68, 22, 6);
-  CX.fillStyle='#44FF44'; CX.font='bold 10px sans-serif'; CX.textAlign='center';
-  CX.fillText('🏠'+Math.ceil(G.baseHp), 42, 315);
-  CX.fillStyle='rgba(0,0,0,0.5)'; fillRnd(404, 300, 68, 22, 6);
-  CX.fillStyle='#FF4444'; CX.font='bold 10px sans-serif';
-  CX.fillText('🏢'+Math.ceil(G.enemyBaseHp), 438, 315);
+  // HP
+  CX.fillStyle='rgba(0,0,0,.5)';rRect(8,298,68,22,6);
+  CX.fillStyle='#44FF44';CX.font='bold 10px sans-serif';CX.textAlign='center';
+  CX.fillText('🏠'+Math.ceil(G.baseHp),42,313);
+  CX.fillStyle='rgba(0,0,0,.5)';rRect(404,298,68,22,6);
+  CX.fillStyle='#FF4444';CX.font='bold 10px sans-serif';
+  CX.fillText('🏢'+Math.ceil(G.enemyBaseHp),438,313);
 }
 
-function drawUI() {
-  // Top bar
-  CX.fillStyle='rgba(0,0,0,0.55)'; fillRnd(4, 4, W-8, 34, 10);
-  CX.fillStyle='#FFD700'; CX.font='bold 11px sans-serif'; CX.textAlign='left';
-  CX.fillText('⚡'+Math.floor(G.energy), 12, 26);
-  CX.fillStyle='rgba(255,255,255,0.15)'; fillRnd(65, 10, 80, 8, 4);
-  CX.fillStyle='#FFD700'; fillRnd(65, 10, 80*(G.energy/G.maxEnergy), 8, 4);
+function drawUI(){
+  CX.fillStyle='rgba(0,0,0,.55)';rRect(4,4,W-8,34,10);
+  CX.fillStyle='#FFD700';CX.font='bold 11px sans-serif';CX.textAlign='left';
+  CX.fillText('⚡'+Math.floor(G.energy),12,26);
+  CX.fillStyle='rgba(255,255,255,.15)';rRect(65,10,80,8,4);
+  CX.fillStyle='#FFD700';rRect(65,10,80*(G.energy/G.maxEnergy),8,4);
+  CX.textAlign='center';CX.fillText('💰'+Math.floor(G.money),185,26);
+  CX.fillStyle='#FFF';CX.font='bold 11px sans-serif';CX.textAlign='center';
+  CX.fillText('Wave '+(G.wave+1)+'/'+G.totalWaves+' · '+(G.wave<G.totalWaves?WAVES[G.wave].desc:'最終突襲'),290,26);
+  CX.fillStyle='#8F8';CX.font='9px sans-serif';CX.textAlign='right';
+  CX.fillText('🐱'+G.cats.length+' vs 🐶'+G.enemies.length,W-12,16);
+  CX.fillText('K:'+G.enemiesKilled,W-12,30);
 
-  CX.textAlign='center';
-  CX.fillText('💰'+Math.floor(G.money), 185, 26);
-
-  CX.fillStyle='#FFF'; CX.font='bold 11px sans-serif'; CX.textAlign='center';
-  const wName = G.wave < G.totalWaves ? WAVES[G.wave].desc : '最終突襲';
-  CX.fillText('Wave '+(G.wave+1)+'/'+G.totalWaves+' · '+wName, 290, 26);
-
-  CX.fillStyle='#8F8'; CX.font='9px sans-serif'; CX.textAlign='right';
-  CX.fillText('🐱'+G.cats.length+' vs 🐶'+G.enemies.length, W-12, 16);
-  CX.fillStyle='#FFF';
-  CX.fillText('K:'+G.enemiesKilled, W-12, 30);
-
-  // Wave announcement
-  if(G.waveState==='idle' && G.waveTimer>0 && G.waveTimer<100) {
+  if(G.waveState==='idle'&&G.waveTimer>0&&G.waveTimer<100){
     CX.globalAlpha=G.waveTimer<30?G.waveTimer/30:1;
-    CX.fillStyle='rgba(0,0,0,0.35)';
-    fillRnd(140, 150, 200, 50, 12);
-    CX.fillStyle='#FFF'; CX.font='bold 16px sans-serif'; CX.textAlign='center';
-    CX.fillText('⚔️ '+(G.wave<G.totalWaves?WAVES[G.wave].desc:'最終決戰!'), 240, 182);
+    CX.fillStyle='rgba(0,0,0,.35)';rRect(140,150,200,50,12);
+    CX.fillStyle='#FFF';CX.font='bold 16px sans-serif';CX.textAlign='center';
+    CX.fillText('⚔️ '+(G.wave<G.totalWaves?WAVES[G.wave].desc:'最終決戰!'),240,182);
     CX.globalAlpha=1;
   }
 
-  // Bottom bar
-  CX.fillStyle='rgba(0,0,0,0.45)'; fillRnd(6, 618, W-12, 94, 12);
-  const bw=63, startX=12;
-  for(let i=0;i<CAT_TYPES.length;i++) {
-    const ct=CAT_TYPES[i], bx=startX+i*(bw+2);
-    const ok=G.money>=ct.cost && CAT_CD[i]<=0;
-    CX.fillStyle=i===G.selectedCat?'rgba(255,215,0,0.35)':'rgba(255,255,255,0.08)';
-    fillRnd(bx, 624, bw, 80, 6);
-
-    CX.fillStyle='#FFA451';
-    CX.beginPath(); CX.arc(bx+bw/2, 654, 10, 0, Math.PI*2); CX.fill();
-    CX.fillStyle='#D48030';
-    CX.beginPath(); CX.moveTo(bx+bw/2-8,647); CX.lineTo(bx+bw/2-6,636); CX.lineTo(bx+bw/2-3,647); CX.fill();
-    CX.beginPath(); CX.moveTo(bx+bw/2+8,647); CX.lineTo(bx+bw/2+6,636); CX.lineTo(bx+bw/2+3,647); CX.fill();
-
-    CX.fillStyle=ok?'#FFD700':'#FF6666'; CX.font='bold 8px sans-serif'; CX.textAlign='center';
-    CX.fillText('💰'+ct.cost, bx+bw/2, 682);
-
-    if(CAT_CD[i]>0) {
-      CX.fillStyle='rgba(0,0,0,0.55)'; fillRnd(bx, 624, bw, 80, 6);
-      CX.fillStyle='#FFF'; CX.font='bold 14px sans-serif';
-      CX.fillText(Math.ceil(CAT_CD[i]/60), bx+bw/2, 662);
-    }
-    if(i===G.selectedCat) {
-      CX.strokeStyle='#FFD700'; CX.lineWidth=2;
-      CX.beginPath(); CX.roundRect(bx, 624, bw, 80, 6); CX.stroke();
-    }
-    CX.fillStyle='rgba(255,255,255,0.35)'; CX.font='8px sans-serif';
-    CX.fillText(i+1, bx+bw/2, 636);
+  // Bottom cat bar
+  CX.fillStyle='rgba(0,0,0,.45)';rRect(6,620,W-12,92,12);
+  const bw=63,startX=12;
+  for(let i=0;i<CAT_TYPES.length;i++){
+    const ct=CAT_TYPES[i],bx=startX+i*(bw+2),ok=G.money>=ct.cost&&CAT_CD[i]<=0;
+    CX.fillStyle=i===G.selectedCat?'rgba(255,215,0,.35)':'rgba(255,255,255,.08)';
+    rRect(bx,626,bw,78,6);
+    // Mini Kenney cat icon
+    CAT_DRAW[i](CX,bx+bw/2,656,18);
+    CX.fillStyle=ok?'#FFD700':'#FF6666';CX.font='bold 8px sans-serif';CX.textAlign='center';
+    CX.fillText('💰'+ct.cost,bx+bw/2,684);
+    if(CAT_CD[i]>0){CX.fillStyle='rgba(0,0,0,.55)';rRect(bx,626,bw,78,6);CX.fillStyle='#FFF';CX.font='bold 14px sans-serif';CX.fillText(Math.ceil(CAT_CD[i]/60),bx+bw/2,664);}
+    if(i===G.selectedCat){CX.strokeStyle='#FFD700';CX.lineWidth=2;CX.beginPath();CX.roundRect(bx,626,bw,78,6);CX.stroke();}
+    CX.fillStyle='rgba(255,255,255,.35)';CX.font='8px sans-serif';CX.fillText(i+1,bx+bw/2,638);
   }
-  CX.fillStyle='#FFF'; CX.font='bold 9px sans-serif'; CX.textAlign='center';
-  CX.fillText(CAT_TYPES[G.selectedCat].name+' · '+CAT_TYPES[G.selectedCat].desc, W/2, 714);
+  CX.fillStyle='#FFF';CX.font='bold 9px sans-serif';CX.textAlign='center';
+  CX.fillText(CAT_TYPES[G.selectedCat].name+' · '+CAT_TYPES[G.selectedCat].desc,W/2,714);
 }
 
-function drawMenu() {
+function drawMenu(){
   const g=CX.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#A8D8FF'); g.addColorStop(0.4,'#C8E8FF'); g.addColorStop(1,'#FFE0B8');
-  CX.fillStyle=g; CX.fillRect(0,0,W,H);
-
-  for(let i=0;i<7;i++) drawKenneyCat(35+i*62, 350+Math.sin(G.frame*0.02+i)*40, 8, 1, i%2===0);
-  for(let i=0;i<5;i++) drawKenneyHusky(55+i*90, 400+Math.sin(G.frame*0.02+i+2)*35, 8, 1);
-
-  CX.fillStyle='rgba(0,0,0,0.55)'; fillRnd(30, 80, W-60, 155, 20);
-  CX.fillStyle='#FFD700'; CX.font='bold 34px sans-serif'; CX.textAlign='center';
-  CX.fillText('🐱 橘犬不寧', W/2, 125);
-  CX.fillStyle='#FFF'; CX.font='bold 16px sans-serif';
-  CX.fillText('～ 貓皇軍團 vs CEO二哈 ～', W/2, 158);
-  CX.font='12px sans-serif'; CX.fillStyle='#CCC';
-  CX.fillText('橘貓大帝率領7大兵種，迎戰CEO哈士奇軍團！', W/2, 190);
-  CX.fillStyle='#AAA'; CX.font='10px sans-serif';
-  CX.fillText('保護城堡 · 擊敗CEO · 10波攻防戰', W/2, 215);
-
-  CX.fillStyle='#FF6B35'; fillRnd(W/2-116, 275, 232, 50, 25);
-  CX.fillStyle='rgba(255,255,255,0.2)'; fillRnd(W/2-116, 275, 232, 25, 25);
-  CX.fillStyle='#FFF'; CX.font='bold 18px sans-serif'; CX.textAlign='center';
-  CX.fillText('▶ 開始戰鬥', W/2, 306);
-
-  CX.fillStyle='rgba(0,0,0,0.4)'; fillRnd(30, 455, W-60, 220, 14);
-  CX.fillStyle='#FFF'; CX.font='11px sans-serif'; CX.textAlign='left';
-  ['🐱 7 種橘貓兵種：從步兵到皇帝貓','🐶 CEO二哈軍團：10波進攻逐步升級',
-   '⚡ 能量自動回復 · 💰 殺敵賺金幣','🏆 摧毀CEO大樓 = 通關勝利！',
-   '📈 貓咪殺敵升級：每5殺提升戰力','⌨ 點擊下方選貓 | 點擊戰場出擊 | P暫停'
-  ].forEach((t,i)=>CX.fillText(t, 50, 490+i*30));
-  CX.fillStyle='rgba(255,255,255,0.3)'; CX.font='10px sans-serif';
-  CX.fillText('🎨 Kenney Style · 點擊開始遊戲', W/2, 700);
+  g.addColorStop(0,'#A8D8FF');g.addColorStop(.4,'#C8E8FF');g.addColorStop(1,'#FFE0B8');
+  CX.fillStyle=g;CX.fillRect(0,0,W,H);
+  for(let i=0;i<7;i++){CAT_DRAW[i](CX,35+i*62,380+Math.sin(G.frame*.02+i)*30,20);CX.fillStyle='rgba(0,0,0,.15)';CX.beginPath();CX.ellipse(35+i*62+2,395+Math.sin(G.frame*.02+i)*30,18,4,0,0,Math.PI*2);CX.fill();}
+  CX.fillStyle='rgba(0,0,0,.55)';rRect(30,80,W-60,155,20);
+  CX.fillStyle='#FFD700';CX.font='bold 34px sans-serif';CX.textAlign='center';
+  CX.fillText('🐱 橘犬不寧',W/2,125);
+  CX.fillStyle='#FFF';CX.font='bold 16px sans-serif';CX.fillText('～ 貓皇軍團 vs CEO二哈 ～',W/2,158);
+  CX.font='12px sans-serif';CX.fillStyle='#CCC';CX.fillText('7種橘貓兵種 · 10波攻防 · Kenney像素風格',W/2,190);
+  CX.fillStyle='#AAA';CX.font='10px sans-serif';CX.fillText('保護城堡 · 擊敗CEO · 一條路正面對決！',W/2,215);
+  CX.fillStyle='#FF6B35';rRect(W/2-116,275,232,50,25);
+  CX.fillStyle='rgba(255,255,255,.2)';rRect(W/2-116,275,232,25,25);
+  CX.fillStyle='#FFF';CX.font='bold 18px sans-serif';CX.fillText('▶ 開始戰鬥',W/2,306);
+  CX.fillStyle='rgba(0,0,0,.4)';rRect(30,455,W-60,220,14);
+  CX.fillStyle='#FFF';CX.font='11px sans-serif';CX.textAlign='left';
+  ['🐱 7種不同橘貓！每種都有獨特造型','🐶 CEO二哈軍團：10波逐步升級','⚡ 能量回滿 · 💰 殺敵賺金幣打魔王',
+   '🚫 不能穿過敵人！正面對撞才夠硬','🏆 摧毀CEO大樓 = 通關勝利！','⌨ 點擊選貓 | 點戰場出擊 | P暫停'
+  ].forEach((t,i)=>CX.fillText(t,50,490+i*30));
+  CX.fillStyle='rgba(255,255,255,.3)';CX.font='10px sans-serif';CX.textAlign='center';
+  CX.fillText('🎨 像素Kenney風格 · 點擊開始',W/2,700);
 }
 
-function drawOverlay() {
-  if(G.scene==='gameover') {
-    CX.fillStyle='rgba(0,0,0,0.65)'; CX.fillRect(0,0,W,H);
-    CX.fillStyle='#FF4444'; CX.font='bold 42px sans-serif'; CX.textAlign='center';
-    CX.fillText('💀 戰敗', W/2, 260);
-    CX.fillStyle='#FFF'; CX.font='17px sans-serif';
-    CX.fillText('城堡被CEO二哈攻陷了...', W/2, 310);
-    CX.fillText('到達第 '+(G.wave+1)+' 波 · 擊殺 '+G.enemiesKilled+' 隻敵人', W/2, 345);
-    CX.fillStyle='#AAA'; CX.font='14px sans-serif';
-    CX.fillText('點擊重新挑戰', W/2, 400);
-  } else if(G.scene==='win') {
-    CX.fillStyle='rgba(0,0,0,0.65)'; CX.fillRect(0,0,W,H);
-    CX.fillStyle='#FFD700'; CX.font='bold 42px sans-serif';
-    CX.fillText('🏆 勝利！', W/2, 240);
-    CX.fillStyle='#FFF'; CX.font='18px sans-serif';
-    CX.fillText('橘貓大帝擊敗了CEO哈士奇！', W/2, 290);
-    CX.fillStyle='#8F8';
-    CX.fillText('🎉 '+G.wave+'波全通 · 擊殺 '+G.enemiesKilled+' 隻敵人', W/2, 330);
-    CX.fillStyle='#AAA'; CX.font='14px sans-serif';
-    CX.fillText('點擊再戰一局', W/2, 390);
+function drawOverlay(){
+  if(G.scene==='gameover'){
+    CX.fillStyle='rgba(0,0,0,.65)';CX.fillRect(0,0,W,H);
+    CX.fillStyle='#FF4444';CX.font='bold 42px sans-serif';CX.textAlign='center';
+    CX.fillText('💀 戰敗',W/2,240);CX.fillStyle='#FFF';CX.font='17px sans-serif';
+    CX.fillText('城堡被CEO二哈攻陷了...',W/2,290);
+    CX.fillText('第'+(G.wave+1)+'波 · 擊殺'+G.enemiesKilled+'隻',W/2,325);
+    CX.fillStyle='#AAA';CX.font='14px sans-serif';CX.fillText('點擊重新挑戰',W/2,380);
+  } else if(G.scene==='win'){
+    CX.fillStyle='rgba(0,0,0,.65)';CX.fillRect(0,0,W,H);
+    CX.fillStyle='#FFD700';CX.font='bold 42px sans-serif';CX.fillText('🏆 勝利！',W/2,220);
+    CX.fillStyle='#FFF';CX.font='18px sans-serif';CX.fillText('橘貓大帝擊敗了CEO哈士奇！',W/2,270);
+    CX.fillStyle='#8F8';CX.fillText('🎉 '+G.wave+'波全通 · 擊殺'+G.enemiesKilled+'隻',W/2,310);
+    CX.fillStyle='#AAA';CX.font='14px sans-serif';CX.fillText('點擊再戰一局',W/2,380);
   }
 }
 
-/* ============================================================
-   RENDER & GAME LOOP
-   ============================================================ */
-function render() {
+function render(){
   CX.clearRect(0,0,W,H);
   if(G.scene==='menu'){drawMenu();return;}
-  drawBG(); drawBattlefield();
-  G.cats.forEach(c=>drawKenneyCat(c.x,c.y,c.size,c.hp/c.hpMax,true));
-  G.enemies.forEach(e=>drawKenneyHusky(e.x,e.y,e.size,e.hp/e.hpMax));
+  drawBG();drawBattlefield();
+  G.cats.forEach(c=>{
+    if(c.hitFlash>0){CX.save();CX.globalAlpha=.4;CX.fillStyle='#FFF';CX.beginPath();CX.arc(c.x+3,c.y-3,CAT_TYPES[c.type].scale*.5,0,Math.PI*2);CX.fill();CX.restore();}
+    drawKenneyCat(c.x,c.y,c.type,c.scale,c.hp/c.hpMax);
+  });
+  G.enemies.forEach(e=>{
+    if(e.hitFlash>0){CX.save();CX.globalAlpha=.5;CX.fillStyle='#FFF';CX.beginPath();CX.arc(e.x,e.y,e.scale*.6,0,Math.PI*2);CX.fill();CX.restore();}
+    drawKenneyHusky(e.x,e.y,e.isBoss,e.scale,e.hp/e.hpMax);
+  });
+  G.dmgTexts.forEach(d=>{CX.globalAlpha=d.life/20;CX.fillStyle=d.color;CX.font='bold 14px sans-serif';CX.textAlign='center';CX.fillText(d.text,d.x,d.y);});
+  CX.globalAlpha=1;
   G.particles.forEach(p=>{CX.globalAlpha=p.life/p.maxL;CX.fillStyle=p.color;CX.beginPath();CX.arc(p.x,p.y,p.size,0,Math.PI*2);CX.fill()});
-  CX.globalAlpha=1; drawUI(); drawOverlay();
+  CX.globalAlpha=1;drawUI();drawOverlay();
 }
 
 function gameLoop(){if(G.scene==='playing')update();render();requestAnimationFrame(gameLoop)}
-
-function resetGame() {
-  G.cats=[];G.enemies=[];G.particles=[];
-  G.money=600;G.energy=60;G.frame=0;
-  G.baseHp=3000;G.maxBaseHp=3000;
+function resetGame(){
+  G.cats=[];G.enemies=[];G.particles=[];G.dmgTexts=[];
+  G.money=600;G.energy=60;G.frame=0;G.baseHp=3000;G.maxBaseHp=3000;
   G.enemyBaseHp=3000;G.maxEnemyBaseHp=3000;
-  G.wave=0;G.waveEnemies=[];G.waveProgress=0;
-  G.waveState='idle';G.waveTimer=60;
-  G.spawnTimer=0;G.catsKilled=0;G.enemiesKilled=0;
-  G.bossSpawned=false;G.gameWon=false;
-  for(let i=0;i<CAT_TYPES.length;i++) CAT_CD[i]=0;
+  G.wave=0;G.waveEnemies=[];G.waveProgress=0;G.waveState='idle';G.waveTimer=60;
+  G.spawnTimer=0;G.catsKilled=0;G.enemiesKilled=0;G.gameWon=false;
+  for(let i=0;i<CAT_TYPES.length;i++)CAT_CD[i]=0;
 }
 
-/* ============================================================
-   INPUT
-   ============================================================ */
 document.addEventListener('keydown',e=>{
   if(e.key==='p'||e.key==='P')G.pause=!G.pause;
   if(e.key>='1'&&e.key<='7')G.selectedCat=parseInt(e.key)-1;
   if(e.key===' '&&G.scene==='playing'){e.preventDefault();spawnCat();}
-  if(e.key===' '||e.key==='Enter'){
-    if(G.scene==='menu'){G.scene='playing';resetGame();}
-    else if(G.scene==='gameover'||G.scene==='win'){G.scene='menu';}
-  }
+  if(e.key===' '||e.key==='Enter'){if(G.scene==='menu'){G.scene='playing';resetGame();}else if(G.scene==='gameover'||G.scene==='win'){G.scene='menu';}}
 });
 
 GC.addEventListener('click',e=>{
-  const r=GC.getBoundingClientRect();
-  const x=(e.clientX-r.left)*W/r.width;
-  const y=(e.clientY-r.top)*H/r.height;
+  const r=GC.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;
   if(G.scene==='menu'||G.scene==='gameover'||G.scene==='win'){G.scene='playing';resetGame();return;}
   const bw=63;
-  for(let i=0;i<7;i++){const bx=12+i*(bw+2);if(y>618&&y<710&&x>bx&&x<bx+bw&&G.money>=CAT_TYPES[i].cost&&CAT_CD[i]<=0){G.selectedCat=i;spawnCat();return;}}
-  if(x>75&&x<425&&y>75&&y<618)spawnCat();
+  for(let i=0;i<7;i++){const bx=12+i*(bw+2);if(y>620&&y<712&&x>bx&&x<bx+bw&&G.money>=CAT_TYPES[i].cost&&CAT_CD[i]<=0){G.selectedCat=i;spawnCat();return;}}
+  if(x>60&&x<420&&y>75&&y<620)spawnCat();
 });
 
 if(!CanvasRenderingContext2D.prototype.roundRect){
   CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
     if(r>w/2)r=w/2;if(r>h/2)r=h/2;
-    this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);
-    this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);
-    this.arcTo(x,y,x+w,y,r);return this;
+    this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);return this;
   };
 }
-
 gameLoop();
 </script>
 </body>
 </html>'''
 
-print(f"Written {len(html)} bytes")
+print(f"Written: {len(html)} bytes")
