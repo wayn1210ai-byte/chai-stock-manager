@@ -41,13 +41,13 @@ const G={
    CAT TYPES (7 units - balanced for playability)
    ============================================================ */
 const CAT_TYPES=[
-  {name:'小橘貓', cost:80,  hp:400, atk:40,  range:28, spd:2.0, cd:90,  size:10, desc:'基本步兵'},
-  {name:'金冠貓', cost:150, hp:1800,atk:15,  range:22, spd:1.3, cd:150, size:13, desc:'肉盾坦克'},
-  {name:'圍兜貓', cost:250, hp:350, atk:130, range:24, spd:1.6, cd:120, size:11, desc:'近戰輸出'},
-  {name:'招財貓', cost:400, hp:500, atk:180, range:60, spd:1.0, cd:180, size:10, desc:'遠程射手'},
-  {name:'虎斑貓', cost:350, hp:300, atk:80,  range:20, spd:4.0, cd:80,  size:11, desc:'高速突擊'},
-  {name:'飛天貓', cost:600, hp:250, atk:220, range:65, spd:2.5, cd:200, size:9,  desc:'精準打擊'},
-  {name:'貓皇帝', cost:1200,hp:2500,atk:600, range:40, spd:1.8, cd:400, size:16, desc:'終極戰力'}
+  {name:'小橘貓', cost:80,  hp:400, atk:40,  range:32, spd:2.0, cd:90,  size:18, desc:'基本步兵'},
+  {name:'金冠貓', cost:150, hp:1800,atk:15,  range:26, spd:1.3, cd:150, size:22, desc:'肉盾坦克'},
+  {name:'圍兜貓', cost:250, hp:350, atk:130, range:28, spd:1.6, cd:120, size:20, desc:'近戰輸出'},
+  {name:'招財貓', cost:400, hp:500, atk:180, range:60, spd:1.0, cd:180, size:18, desc:'遠程射手'},
+  {name:'虎斑貓', cost:350, hp:300, atk:80,  range:24, spd:4.0, cd:80,  size:19, desc:'高速突擊'},
+  {name:'飛天貓', cost:600, hp:250, atk:220, range:65, spd:2.5, cd:200, size:17, desc:'精準打擊'},
+  {name:'貓皇帝', cost:1200,hp:2500,atk:600, range:42, spd:1.8, cd:400, size:28, desc:'終極戰力'}
 ];
 const CAT_CD=new Array(CAT_TYPES.length).fill(0);
 
@@ -312,7 +312,7 @@ function spawnEnemy(typeIdx) {
   G.enemies.push({
     x:395, y:370-Math.random()*40, vx:-et.spd,
     hp, hpMax:hp, atk, atkCD:0, atkInt:45,
-    type:typeIdx, state:'walk', size:11, score:et.score
+    type:typeIdx, state:'walk', size:typeIdx===5?32:16, score:et.score
   });
 }
 
@@ -501,18 +501,19 @@ function drawBattlefield() {
   for(let x=75;x<425;x+=20) CX.fillRect(x,340,2,80);
 
   CX.fillStyle='rgba(255,255,255,0.15)';
-  for(let y=355;y<405;y+=22) CX.fillRect(75,y,350,2);
+  // Single path (one lane) - removed lane dividers
 
-  // Player base
-  CX.fillStyle='#8B5E3C'; fillRnd(10, 330, 55, 65, 6);
-  CX.fillStyle='#A07050'; fillRnd(8, 326, 59, 8, 3);
-  CX.font='26px sans-serif'; CX.textAlign='center'; CX.textBaseline='middle';
+  // Player base (bigger)
+  CX.fillStyle='#8B5E3C'; fillRnd(4, 320, 66, 85, 8);
+  CX.fillStyle='#A07050'; fillRnd(2, 315, 70, 10, 4);
+  CX.font='34px sans-serif'; CX.textAlign='center'; CX.textBaseline='middle';
   CX.fillText('🐱', 37, 362);
 
-  // Enemy base
-  CX.fillStyle='#404050'; fillRnd(415, 330, 55, 65, 6);
-  CX.fillStyle='#505060'; fillRnd(413, 326, 59, 8, 3);
-  CX.fillText('🐶', 442, 362);
+  // Enemy base (bigger)
+  CX.fillStyle='#404050'; fillRnd(410, 320, 66, 85, 8);
+  CX.fillStyle='#505060'; fillRnd(408, 315, 70, 10, 4);
+  CX.font='34px sans-serif';
+  CX.fillText('🐶', 443, 362);
 
   // HP indicators
   CX.fillStyle='rgba(0,0,0,0.5)'; fillRnd(8, 300, 68, 22, 6);
