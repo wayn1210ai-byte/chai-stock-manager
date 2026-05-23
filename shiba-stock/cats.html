@@ -592,7 +592,7 @@ function drawMenu(){
   g.addColorStop(0,'#A8D8FF');g.addColorStop(.4,'#C8E8FF');g.addColorStop(1,'#FFE0B8');
   CX.fillStyle=g;CX.fillRect(0,0,W,H);
   // Decorations
-  for(let i=0;i<7;i++){const f=[drawCat0,drawCat1,drawCat2,drawCat3,drawCat4,drawCat5,drawCat6][i];f(CX,40+i*62,380+Math.sin(G.frame*.02+i)*30,20,20,1);}
+  for(let i=0;i<7;i++){const f=[drawCat0,drawCat1,drawCat2,drawCat3,drawCat4,drawCat5,drawCat6][i];f(40+i*62, 380+Math.sin(G.frame*.02+i)*30, 20, 20, 1);}
   CX.fillStyle='rgba(0,0,0,.55)';rRect(30,80,W-60,145,20);
   CX.fillStyle='#FFD700';CX.font='bold 32px sans-serif';CX.textAlign='center';CX.fillText('🐱 橘犬不寧',W/2,120);
   CX.fillStyle='#FFF';CX.font='bold 15px sans-serif';CX.fillText('～ 一條路正面對決 ～',W/2,150);
@@ -634,7 +634,7 @@ function render(){
   const catDraws=[drawCat0,drawCat1,drawCat2,drawCat3,drawCat4,drawCat5,drawCat6];
   G.cats.forEach(c=>{
     if(c.hitFlash>0){CX.save();CX.globalAlpha=.5;CX.fillStyle='#FFF';CX.beginPath();CX.arc(c.x,c.y-8,c.w*0.5,0,Math.PI*2);CX.fill();CX.restore();}
-    catDraws[c.type](CX,c.x,370,c.w,c.h,c.hp/c.hpMax);
+    catDraws[c.type](c.x, 370, c.w, c.h, c.hp/c.hpMax);
   });
   G.enemies.forEach(e=>{
     if(e.hitFlash>0){CX.save();CX.globalAlpha=.5;CX.fillStyle='#FFF';CX.beginPath();CX.arc(e.x,e.y-8,e.w*0.5,0,Math.PI*2);CX.fill();CX.restore();}
