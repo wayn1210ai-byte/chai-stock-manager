@@ -408,45 +408,58 @@ window.addEventListener('resize', scaleGame);
 window.addEventListener('load', () => setTimeout(scaleGame, 100));
 
 // ═══════════ TOUCH SUPPORT ═══════════
-canvas.addEventListener('touchstart', function(e) {
-  e.preventDefault();
-  if(!gameRunning) return;
+function getCanvasXY(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
-  const touch = e.touches[0];
-  const scale = document.getElementById('gameContainer').style._scale || 1;
-  const mx = (touch.clientX - rect.left) / scale;
-  const my = (touch.clientY - rect.top) / scale;
-  handleClick(mx, my);
-}, {passive: false});
+  // Use canvas actual vs visible size to calculate scale
+  const scaleX = rect.width / canvas.width;
+  const scaleY = rect.height / canvas.height;
+  return {
+    x: (clientX - rect.left) / scaleX,
+    y: (clientY - rect.top) / scaleY
+  };
+}
+
+canvas.addEventListener('touchstart', function(e) {
+  if(!gameRunning) return;
+  const t = e.touches[0];
+  const pos = getCanvasXY(t.clientX, t.clientY);
+  handleClick(pos.x, pos.y);
+}, {passive: true});
+
+// Mouse click for desktop
+canvas.addEventListener('click', function(e) {
+  if(!gameRunning) return;
+  const pos = getCanvasXY(e.clientX, e.clientY);
+  handleClick(pos.x, pos.y);
+});
 
 function handleClick(mx, my) {
   if(!gameRunning) return;
-  const cx = mx - 0; // canvas offset x
-  const cy = my - 36; // subtract topbar height
-  const c = Math.floor(cx / TILE);
+  const cy = my - 36; // 扣除上方工具列
+  const c = Math.floor(mx / TILE);
   const r = Math.floor(cy / TILE);
-  if(r < 0 || r >= 9 || c < 0 || c >= 15) return;
-  if(MAP[r][c] !== 0) return;
-  if(heroes.some(h => h.r === r && h.c === c)) return;
+  if(r < 0 || r >= 9 || c < 0 || c >= 15) {
+    document.getElementById('statusTxt').textContent = '❌ 點在草地才能放！';
+    return;
+  }
+  if(MAP[r][c] !== 0) {
+    document.getElementById('statusTxt').textContent = '❌ 這是路徑/牆壁！';
+    return;
+  }
+  if(heroes.some(h => h.r === r && h.c === c)) {
+    document.getElementById('statusTxt').textContent = '❌ 這裡已經有勇者了！';
+    return;
+  }
   const type = HERO_TYPES[selectedHero];
   if(gold < type.cost) {
-    document.getElementById('statusTxt').textContent = '❌ 金幣不足！';
+    document.getElementById('statusTxt').textContent = '❌ 金幣不足！需要 ' + type.cost + 'G';
     return;
   }
   gold -= type.cost;
   heroes.push(new Hero(type, r, c));
   updateUI();
-  document.getElementById('statusTxt').textContent = `${type.name} 已放置！`;
+  document.getElementById('statusTxt').textContent = '✅ ' + type.name + ' 已放置！(' + (c+1)+','+(r+1)+')';
 }
-
-// Also update mouse click to use the shared handler
-canvas.addEventListener('click', function(e) {
-  const rect = canvas.getBoundingClientRect();
-  const scale = parseFloat(document.getElementById('gameContainer').style.transform.replace('scale(','')) || 1;
-  const mx = (e.clientX - rect.left) / scale;
-  const my = (e.clientY - rect.top) / scale;
-  handleClick(mx, my);
-});
 
 // ═══════════ INIT ═══════════
 try {
