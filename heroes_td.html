@@ -6,8 +6,8 @@
 <title>勇者守塔 TD</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0a1a;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:monospace;overflow:hidden;image-rendering:pixelated}
-#wrap{position:relative}
+body{background:#0a0a1a;display:flex;justify-content:center;align-items:center;min-height:100dvh;font-family:monospace;overflow:hidden;image-rendering:pixelated;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#gameContainer{position:relative;transform-origin:top left}
 canvas{display:block;border:3px solid #6a4a2a;border-radius:4px;box-shadow:0 0 40px rgba(100,60,20,0.3)}
 #topbar{position:absolute;top:0;left:0;right:0;height:36px;background:linear-gradient(180deg,#1a0e06,#0d0703);border-bottom:2px solid #6a4a2a;display:flex;align-items:center;padding:0 8px;gap:6px;z-index:5}
 .st{display:flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(0,0,0,0.6);border:1px solid rgba(106,74,42,0.4);border-radius:3px;color:#c8a060;font-size:12px;font-weight:bold}
@@ -34,7 +34,7 @@ canvas{display:block;border:3px solid #6a4a2a;border-radius:4px;box-shadow:0 0 4
 </head>
 <body>
 
-<div id="wrap">
+<div id="gameContainer">
   <canvas id="gc" width="800" height="540"></canvas>
   <div id="topbar">
     <div class="st">🪙 <span id="goldV" class="v">100</span></div>
@@ -391,32 +391,57 @@ function draw(){
   requestAnimationFrame(draw);
 }
 
-// ═══════════ INPUT ═══════════
-canvas.addEventListener('click',e=>{
-  if(!gameRunning) return;
-  const rect=canvas.getBoundingClientRect();
-  const mx=(e.clientX-rect.left)/rect.width*canvas.width;
-  const my=(e.clientY-rect.top)/rect.height*canvas.height-36;
-  const c=Math.floor(mx/TILE), r=Math.floor(my/TILE);
-  if(r<0||r>=ROWS||c<0||c>=COLS)return;
-  // Check if valid placement (grass only)
-  if(MAP[r][c]!==0) return;
-  // Check no existing hero at same position
-  if(heroes.some(h=>h.r===r&&h.c===c)) return;
-  // Check gold
-  const type=HERO_TYPES[selectedHero];
-  if(gold<type.cost) {document.getElementById('statusTxt').textContent='❌ 金幣不足！'; return;}
-  gold-=type.cost;
-  heroes.push(new Hero(type,r,c));
-  updateUI();
-  document.getElementById('statusTxt').textContent=`${type.name} 已放置！`;
-});
+// ═══════════ RESPONSIVE SCALING ═══════════
+function scaleGame() {
+  const gc = document.getElementById('gameContainer');
+  const scaleX = window.innerWidth / gc.offsetWidth;
+  const scaleY = window.innerHeight / gc.offsetHeight;
+  const scale = Math.min(scaleX, scaleY, 1); // Don't scale up beyond 1x
+  gc.style.transform = `scale(${scale})`;
+  gc.style.marginLeft = `${(window.innerWidth - gc.offsetWidth * scale) / 2}px`;
+  gc.style.marginTop = `${(window.innerHeight - gc.offsetHeight * scale) / 2}px`;
+}
+window.addEventListener('resize', scaleGame);
+window.addEventListener('load', () => setTimeout(scaleGame, 100));
 
-canvas.addEventListener('mousemove',e=>{
-  const rect=canvas.getBoundingClientRect();
-  const mx=(e.clientX-rect.left)/rect.width*canvas.width;
-  const my=(e.clientY-rect.top)/rect.height*canvas.height-36;
-  mouse.gridX=Math.floor(mx/TILE); mouse.gridY=Math.floor(my/TILE);
+// ═══════════ TOUCH SUPPORT ═══════════
+canvas.addEventListener('touchstart', function(e) {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  const scale = parseFloat(document.getElementById('gameContainer').style.transform.replace('scale(','')) || 1;
+  const mx = (touch.clientX - rect.left) / scale;
+  const my = (touch.clientY - rect.top) / scale;
+  handleClick(mx, my);
+}, {passive: false});
+
+function handleClick(mx, my) {
+  if(!gameRunning) return;
+  const cx = mx - 0; // canvas offset x
+  const cy = my - 36; // subtract topbar height
+  const c = Math.floor(cx / TILE);
+  const r = Math.floor(cy / TILE);
+  if(r < 0 || r >= 9 || c < 0 || c >= 15) return;
+  if(MAP[r][c] !== 0) return;
+  if(heroes.some(h => h.r === r && h.c === c)) return;
+  const type = HERO_TYPES[selectedHero];
+  if(gold < type.cost) {
+    document.getElementById('statusTxt').textContent = '❌ 金幣不足！';
+    return;
+  }
+  gold -= type.cost;
+  heroes.push(new Hero(type, r, c));
+  updateUI();
+  document.getElementById('statusTxt').textContent = `${type.name} 已放置！`;
+}
+
+// Also update mouse click to use the shared handler
+canvas.addEventListener('click', function(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scale = parseFloat(document.getElementById('gameContainer').style.transform.replace('scale(','')) || 1;
+  const mx = (e.clientX - rect.left) / scale;
+  const my = (e.clientY - rect.top) / scale;
+  handleClick(mx, my);
 });
 
 // ═══════════ INIT ═══════════
