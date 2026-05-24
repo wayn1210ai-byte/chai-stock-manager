@@ -396,10 +396,14 @@ function scaleGame() {
   const gc = document.getElementById('gameContainer');
   const scaleX = window.innerWidth / gc.offsetWidth;
   const scaleY = window.innerHeight / gc.offsetHeight;
-  const scale = Math.min(scaleX, scaleY, 1); // Don't scale up beyond 1x
-  gc.style.transform = `scale(${scale})`;
-  gc.style.marginLeft = `${(window.innerWidth - gc.offsetWidth * scale) / 2}px`;
-  gc.style.marginTop = `${(window.innerHeight - gc.offsetHeight * scale) / 2}px`;
+  const s = Math.min(scaleX, scaleY, 1);
+  gc.style.transform = 'scale(' + s + ')';
+  gc.style.transformOrigin = 'top left';
+  gc.style._scale = s;
+  const ml = Math.max(0, (window.innerWidth - gc.offsetWidth * s) / 2);
+  const mt = Math.max(0, (window.innerHeight - gc.offsetHeight * s) / 2);
+  gc.style.marginLeft = ml + 'px';
+  gc.style.marginTop = mt + 'px';
 }
 window.addEventListener('resize', scaleGame);
 window.addEventListener('load', () => setTimeout(scaleGame, 100));
@@ -407,9 +411,10 @@ window.addEventListener('load', () => setTimeout(scaleGame, 100));
 // ═══════════ TOUCH SUPPORT ═══════════
 canvas.addEventListener('touchstart', function(e) {
   e.preventDefault();
+  if(!gameRunning) return;
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
-  const scale = parseFloat(document.getElementById('gameContainer').style.transform.replace('scale(','')) || 1;
+  const scale = document.getElementById('gameContainer').style._scale || 1;
   const mx = (touch.clientX - rect.left) / scale;
   const my = (touch.clientY - rect.top) / scale;
   handleClick(mx, my);
