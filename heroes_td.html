@@ -445,9 +445,23 @@ canvas.addEventListener('click', function(e) {
 });
 
 // ═══════════ INIT ═══════════
-setupUI();
-draw();
-setInterval(update,1000/60);
+try {
+  setupUI();
+  draw();
+  setInterval(update, 1000/60);
+  // Debug on canvas
+  var dbg = document.getElementById('gc').getContext('2d');
+  dbg.fillStyle = '#ff6600';
+  dbg.font = '14px monospace';
+  dbg.fillText('Game loaded: ' + new Date().toLocaleTimeString(), 10, 450);
+  console.log('Game init OK');
+} catch(e) {
+  console.log('Init error:', e.message);
+  var dbg = document.getElementById('gc').getContext('2d');
+  dbg.fillStyle = '#ff0000';
+  dbg.font = '16px monospace';
+  dbg.fillText('Error: ' + e.message, 10, 450);
+}
 </script>
 </body>
 </html>
