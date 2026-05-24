@@ -260,6 +260,7 @@ class Projectile{
 // ═══════════ WAVES ═══════════
 function nextWave(){
   if(gameOverFlag) return;
+  waveScheduled=false; // reset the flag
   wave++; waveSpawning=true;
   const count=4+wave; // 波1=5隻, 波5=9隻
   const maxType=Math.min(Math.floor((wave-1)/3),ENEMY_TYPES.length-1);
@@ -285,7 +286,7 @@ function updateSpawning(){
   }
 }
 
-let gameOverFlag=false;
+let gameOverFlag=false, waveScheduled=false;
 function gameOver(){
   gameOverFlag=true; gameRunning=false;
   document.getElementById('msgTitle').textContent='💀 遊戲結束';
@@ -302,6 +303,7 @@ function restartGame(){
   gold=100; lives=20; kills=0; wave=0; score=0;
   heroes=[]; enemies=[]; projectiles=[]; particles=[];
   waveSpawning=false; gameOverFlag=false;
+  waveScheduled=false;
   document.getElementById('msg').style.display='none';
   document.getElementById('statusTxt').textContent='選擇勇者後點地圖放置';
   updateUI();
@@ -362,9 +364,13 @@ function update(){
   // Particles
   for(const p of particles) p.t--;
   particles=particles.filter(p=>p.t>0);
-  // Check wave complete
-  if(!waveSpawning&&enemies.length===0&&!gameOverFlag){
-    setTimeout(()=>{if(gameRunning&&!gameOverFlag)nextWave();},2000);
+  // Check wave complete (only schedule once)
+  if(!waveSpawning&&enemies.length===0&&!gameOverFlag&&!waveScheduled){
+    waveScheduled=true;
+    setTimeout(()=>{
+      waveScheduled=false;
+      if(gameRunning&&!gameOverFlag) nextWave();
+    },3000);
   }
   updateUI();
 }
