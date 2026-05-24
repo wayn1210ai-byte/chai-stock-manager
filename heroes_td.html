@@ -60,28 +60,71 @@ const TILE_S=16; // source tile size
 const SCALE=TILE/TILE_S; // 3x
 
 // ═══════════ MAP ═══════════
-// Winding path from left to right (0=grass, 1=path, 2=wall)
+// Zigzag path from BOTTOM to TOP (0=grass, 1=path, 2=wall)
 const MAP = [
   [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
-  [2,1,1,1,1,0,0,0,0,0,0,0,0,0,2],
-  [2,0,0,0,1,0,0,0,0,0,0,0,0,0,2],
-  [2,0,0,0,1,1,1,1,1,0,0,0,0,0,2],
-  [2,0,0,0,0,0,0,0,1,0,0,0,0,0,2],
-  [2,0,0,0,0,0,0,0,1,1,1,1,1,1,2],
-  [2,0,0,0,0,0,0,0,0,0,0,0,0,1,2],
-  [2,0,0,0,0,0,0,0,0,0,0,0,0,1,2],
+  [2,0,0,0,0,0,0,0,0,0,0,1,1,0,2],
+  [2,0,0,0,0,0,0,0,0,0,0,1,0,0,2],
+  [2,1,1,1,1,1,1,0,0,0,0,1,0,0,2],
+  [2,0,0,0,0,0,1,0,0,0,0,1,0,0,2],
+  [2,0,0,0,0,0,1,1,1,1,1,1,0,0,2],
+  [2,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [2,1,1,1,1,1,1,1,1,1,1,1,0,0,2],
   [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
 ];
 
-// Path waypoints (enemy follows these)
+// Path waypoints — enemies enter at BOTTOM (row 7) and walk UP to exit at TOP (row 1)
 const PATH = [
-  {c:1,r:1},{c:2,r:1},{c:3,r:1},{c:4,r:1},
-  {c:4,r:2},{c:4,r:3},
-  {c:5,r:3},{c:6,r:3},{c:7,r:3},{c:8,r:3},
-  {c:8,r:4},{c:8,r:5},
-  {c:9,r:5},{c:10,r:5},{c:11,r:5},{c:12,r:5},{c:13,r:5},
-  {c:13,r:6},{c:13,r:7},
+  // Entry at bottom-left (row 7), walk RIGHT
+  {c:1,r:7},{c:2,r:7},{c:3,r:7},{c:4,r:7},{c:5,r:7},{c:6,r:7},{c:7,r:7},{c:8,r:7},{c:9,r:7},{c:10,r:7},{c:11,r:7},
+  // Go UP to row 5
+  {c:11,r:6},{c:11,r:5},
+  // Go LEFT to col 6
+  {c:10,r:5},{c:9,r:5},{c:8,r:5},{c:7,r:5},{c:6,r:5},
+  // Go UP to row 3
+  {c:6,r:4},{c:6,r:3},
+  // Go RIGHT to col 11
+  {c:7,r:3},{c:8,r:3},{c:9,r:3},{c:10,r:3},{c:11,r:3},
+  // Go UP to row 1
+  {c:11,r:2},{c:11,r:1},
+  // Exit at top-right (col 12, row 1)
+  {c:12,r:1},
 ];
+
+// Decorations randomly placed on grass tiles
+const DECO_TILES = [
+  {sx:6,sy:3}, // barrel
+  {sx:7,sy:3}, // crate
+  {sx:8,sy:3}, // rock
+  {sx:5,sy:4}, // small plant
+  {sx:6,sy:4}, // crystal
+  {sx:7,sy:4}, // mushroom
+  {sx:4,sy:3}, // table
+];
+
+// Grass tile variants
+const GRASS_TILES = [
+  {sx:0,sy:0}, {sx:0,sy:1}, {sx:1,sy:0}, {sx:1,sy:1},
+  {sx:2,sy:0}, {sx:2,sy:1}, {sx:3,sy:1},
+];
+
+// Path tile variants
+const PATH_TILES = [
+  {sx:1,sy:0}, {sx:2,sy:0}, {sx:3,sy:0}, {sx:4,sy:0},
+];
+
+// Generate decorations on grass
+let decorations = [];
+function genDecorations() {
+  decorations = [];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) {
+    if(MAP[r][c] !== 0) continue;
+    // 15% chance for decoration
+    if(Math.random() > 0.15) continue;
+    const d = DECO_TILES[Math.floor(Math.random() * DECO_TILES.length)];
+    decorations.push({c, r, sx:d.sx, sy:d.sy});
+  }
+}
 
 // ═══════════ HERO TYPES ═══════════
 const HERO_TYPES = [
@@ -101,10 +144,11 @@ const ENEMY_TYPES = [
 ];
 
 // ═══════════ GAME STATE ═══════════
-let gold=100, lives=20, kills=0, wave=0, score=0;
+let gold=300, lives=20, kills=0, wave=0, score=0;
 let heroes=[], enemies=[], projectiles=[], particles=[];
 let selectedHero=0, gameRunning=false, waveSpawning=false, spawnCount=0, spawnTimer=0, waveEnemies=[];
 let mouse={x:0,y:0,gridX:-1,gridY:-1};
+let heroClickEnabled=true; // extra check for mobile
 
 const canvas=document.getElementById('gc');
 const ctx=canvas.getContext('2d');
@@ -260,15 +304,15 @@ class Projectile{
 // ═══════════ WAVES ═══════════
 function nextWave(){
   if(gameOverFlag) return;
-  waveScheduled=false; // reset the flag
+  waveScheduled=false;
   wave++; waveSpawning=true;
-  const count=4+wave; // 波1=5隻, 波5=9隻
-  const maxType=Math.min(Math.floor((wave-1)/3),ENEMY_TYPES.length-1);
+  const count=2+wave; // 波1=3隻, 波5=7隻
+  const maxType=Math.min(Math.floor((wave-1)/2),ENEMY_TYPES.length-1);
   waveEnemies=[];
   for(let i=0;i<count;i++){
     const typeIdx=Math.floor(Math.random()*(maxType+1));
-    // 每隻間隔 60~90 frames (1~1.5秒)
-    waveEnemies.push({type:Math.min(typeIdx,ENEMY_TYPES.length-1), delay:60+Math.floor(Math.random()*30)});
+    // 每隻間隔 90~120 frames (1.5~2秒) — 更慢更從容
+    waveEnemies.push({type:Math.min(typeIdx,ENEMY_TYPES.length-1), delay:90+Math.floor(Math.random()*30)});
   }
   spawnCount=0; spawnTimer=0;
   document.getElementById('statusTxt').textContent='🌊 第 '+wave+' 波！ ('+count+'隻)';
@@ -300,7 +344,7 @@ function winGame(){
   document.getElementById('msg').style.display='block';
 }
 function restartGame(){
-  gold=100; lives=20; kills=0; wave=0; score=0;
+  gold=300; lives=20; kills=0; wave=0; score=0;
   heroes=[]; enemies=[]; projectiles=[]; particles=[];
   waveSpawning=false; gameOverFlag=false;
   waveScheduled=false;
@@ -308,40 +352,80 @@ function restartGame(){
   document.getElementById('statusTxt').textContent='選擇勇者後點地圖放置';
   updateUI();
   gameRunning=true;
-  setTimeout(()=>nextWave(),1000);
+  setTimeout(()=>nextWave(),2000);
 }
 function startGame(){
   document.getElementById('startBtn').style.display='none';
   gameRunning=true;
-  gold=200; // 更多起始金幣
+  gold=300;
   updateUI();
-  document.getElementById('statusTxt').textContent='放置勇者！敵人即將來襲！';
-  setTimeout(()=>nextWave(),3000); // 3秒緩衝
+  document.getElementById('statusTxt').textContent='選擇勇者放到路徑旁的草地上！敵人即將來襲！';
+  setTimeout(()=>nextWave(),5000); // 5秒緩衝，讓你先放勇者
 }
 
 // ═══════════ DRAW ═══════════
+let grassSeed = 0;
 function drawMap(){
+  // Use seeded random based on tile position for deterministic decoration
+  if(grassSeed === 0) genDecorations();
+  
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
     const t=MAP[r][c];
     let sx,sy;
-    if(t===0){sx=0;sy=0;} // grass floor
-    else if(t===1){sx=1;sy=0;} // stone floor (path)
-    else {sx=0;sy=2;} // wall
     const px=c*TILE, py=r*TILE+36;
+    if(t===0){
+      // Grass with random variant (seeded by position)
+      const gi = (r * COLS + c) % GRASS_TILES.length;
+      sx=GRASS_TILES[gi].sx; sy=GRASS_TILES[gi].sy;
+    } else if(t===1){
+      // Path with random variant
+      const pi = (r * 7 + c * 3) % PATH_TILES.length;
+      sx=PATH_TILES[pi].sx; sy=PATH_TILES[pi].sy;
+    } else {
+      sx=0;sy=2; // wall
+    }
     if(TD_IMG.complete){
       ctx.drawImage(TD_IMG, sx*TILE_S,sy*TILE_S,TILE_S,TILE_S, px,py,TILE,TILE);
     } else {
-      ctx.fillStyle=t===2?'#444':'#666'; ctx.fillRect(px,py,TILE,TILE);
+      ctx.fillStyle=t===2?'#333':'#555'; ctx.fillRect(px,py,TILE,TILE);
     }
   }
+  // Draw decorations on top of grass
+  if(TD_IMG.complete){
+    for(const d of decorations){
+      const px=d.c*TILE, py=d.r*TILE+36;
+      ctx.drawImage(TD_IMG, d.sx*TILE_S,d.sy*TILE_S,TILE_S,TILE_S, px,py,TILE,TILE);
+    }
+  }
+  // Draw entry and exit markers
+  // Entry at bottom-left (row 7, col 1)
+  const entryX = 1 * TILE, entryY = 7 * TILE + 36;
+  ctx.fillStyle = 'rgba(0,200,255,0.25)';
+  ctx.fillRect(entryX, entryY, TILE, TILE);
+  ctx.fillStyle = '#00ccff';
+  ctx.font = '20px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('▼', entryX + TILE/2, entryY + TILE/2 + 7);
+  // Exit at top-right (row 1, col 12)
+  const exitX = 12 * TILE, exitY = 1 * TILE + 36;
+  ctx.fillStyle = 'rgba(255,100,100,0.25)';
+  ctx.fillRect(exitX, exitY, TILE, TILE);
+  ctx.fillStyle = '#ff6666';
+  ctx.fillText('▲', exitX + TILE/2, exitY + TILE/2 + 7);
+  // Small labels
+  ctx.font = '9px sans-serif';
+  ctx.fillStyle = '#00ccff';
+  ctx.fillText('入口', entryX + TILE/2, entryY + TILE + 14);
+  ctx.fillStyle = '#ff6666';
+  ctx.fillText('出口', exitX + TILE/2, exitY + TILE + 14);
   // Grid highlight
   if(mouse.gridX>=0&&mouse.gridY>=0&&gameRunning){
     const gx=mouse.gridX*TILE, gy=mouse.gridY*TILE+36;
-    ctx.strokeStyle='rgba(255,215,0,0.2)'; ctx.lineWidth=2;
+    ctx.strokeStyle='rgba(255,215,0,0.3)'; ctx.lineWidth=2;
     ctx.strokeRect(gx,gy,TILE,TILE);
     // Show range if hero selected
     const h=HERO_TYPES[selectedHero];
-    ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=1;
+    ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1;
     ctx.beginPath(); ctx.arc(gx+TILE/2,gy+TILE/2,h.range,0,Math.PI*2); ctx.stroke();
   }
 }
@@ -469,6 +553,7 @@ function handleClick(mx, my) {
 
 // ═══════════ INIT ═══════════
 try {
+  genDecorations();
   setupUI();
   draw();
   setInterval(update, 1000/60);
