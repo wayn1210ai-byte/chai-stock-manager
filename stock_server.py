@@ -378,6 +378,10 @@ def serve_game():
 def serve_cats():
     return send_from_directory(os.path.join(DIR, 'shiba-stock'), 'cats.html')
 
+@app.route('/heroes')
+def serve_heroes():
+    return send_from_directory(DIR, 'heroes_td.html')
+
 if __name__ == '__main__':
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)

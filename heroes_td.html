@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>勇者守塔 TD</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:monospace;overflow:hidden;image-rendering:pixelated}
+#wrap{position:relative}
+canvas{display:block;border:3px solid #6a4a2a;border-radius:4px;box-shadow:0 0 40px rgba(100,60,20,0.3)}
+#topbar{position:absolute;top:0;left:0;right:0;height:36px;background:linear-gradient(180deg,#1a0e06,#0d0703);border-bottom:2px solid #6a4a2a;display:flex;align-items:center;padding:0 8px;gap:6px;z-index:5}
+.st{display:flex;align-items:center;gap:3px;padding:2px 8px;background:rgba(0,0,0,0.6);border:1px solid rgba(106,74,42,0.4);border-radius:3px;color:#c8a060;font-size:12px;font-weight:bold}
+.st .v{min-width:28px}
+#goldV{color:#ffd700}
+#lifeV{color:#ff4444}
+#waveV{color:#66ccff}
+#killV{color:#88ff66}
+#msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);border:2px solid #6a4a2a;border-radius:8px;padding:20px 30px;text-align:center;display:none;z-index:20;min-width:250px}
+#msg h2{color:#ffd700;font-size:18px;margin-bottom:6px}
+#msg p{color:#aaa;font-size:13px;margin:3px 0}
+#msg button{margin-top:10px;padding:8px 28px;background:#6a4a2a;border:none;border-radius:4px;color:#ffd700;font-weight:bold;font-size:14px;cursor:pointer}
+#msg button:hover{background:#8a5a3a}
+#startBtn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:30;padding:14px 36px;background:linear-gradient(180deg,#6a4a2a,#4a2a0a);border:2px solid #ffd700;border-radius:6px;color:#ffd700;font-size:20px;font-weight:bold;cursor:pointer;font-family:monospace;box-shadow:0 0 30px rgba(255,215,0,0.3)}
+#startBtn:hover{transform:translate(-50%,-50%) scale(1.05)}
+#heroPanel{position:absolute;bottom:0;left:0;right:0;height:52px;background:linear-gradient(0deg,#1a0e06,#0d0703);border-top:2px solid #6a4a2a;display:flex;align-items:center;justify-content:center;gap:4px;z-index:5}
+.hb{width:52px;height:46px;background:rgba(0,0,0,0.6);border:2px solid rgba(106,74,42,0.3);border-radius:4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all 0.15s;color:#c8a060;font-size:7px}
+.hb:hover{border-color:#ffd700;background:rgba(255,215,0,0.1)}
+.hb.sel{border-color:#ffd700;box-shadow:0 0 8px rgba(255,215,0,0.5);background:rgba(255,215,0,0.15)}
+.hb .ico{font-size:18px;line-height:1}
+.hb .nm{font-size:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:48px;text-align:center}
+.hb .cost{color:#ffd700;font-size:8px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<div id="wrap">
+  <canvas id="gc" width="800" height="540"></canvas>
+  <div id="topbar">
+    <div class="st">🪙 <span id="goldV" class="v">100</span></div>
+    <div class="st">❤️ <span id="lifeV" class="v">20</span></div>
+    <div class="st">🌊 <span id="waveV" class="v">0</span></div>
+    <div class="st">💀 <span id="killV" class="v">0</span></div>
+    <div class="st" style="margin-left:auto;font-size:10px;color:#888" id="statusTxt">選擇勇者後點地圖放置</div>
+  </div>
+  <div id="heroPanel"></div>
+  <div id="msg"><h2 id="msgTitle">💀 遊戲結束</h2><p id="msgDesc">所有勇者都倒下了...</p><button onclick="restartGame()">🔄 再來一局</button></div>
+  <button id="startBtn" onclick="startGame()">⚔️ 開始冒險</button>
+</div>
+
+<script>
+// ═══════════ GAME CONFIG ═══════════
+const TILE=48, COLS=15, ROWS=9;
+const W=COLS*TILE, H=ROWS*TILE+36+52; // 720+36+52=808 but we use 800
+
+// Kenney Tiny Dungeon tilemap (16x16 tiles, 12 cols x 11 rows)
+const TD_B64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAACwCAMAAABuIJH0AAAABGdBTUEAALGPC/xhBQAAAFRQTFRFAAAAqrfM/udh/q40/smc5O35af/UdeP/0XbQAJnbWmmIm0yj/3BtJZVq4Zpl6EU3Q+Gz////98KCz4JUvWxKUmB8wMvcJitEdjs26qVsi5u0PyYxhk+Z/gAAAAF0Uk5TAEDm2GYAAAF5SURBVHja7dvZcoMwEEXRkLDpvv//25QEy0i2BGb0olTNeUrNw7DSsQ0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAqbwPQgg6x0IIOsc+jl0fZx+frT7O6+Ns9XFq3+f1cbL6uFp9nFZfp6g+Tq2vU1Kfo9bnSO5zlPo8SX2eoD7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7PmzPmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz7Pmz3U/o20wBjP82AAAAAElFTkSuQmCC";
+const TD_IMG = new Image(); TD_IMG.src = TD_B64;
+const TILE_S=16; // source tile size
+const SCALE=TILE/TILE_S; // 3x
+
+// ═══════════ MAP ═══════════
+// Winding path from left to right (0=grass, 1=path, 2=wall)
+const MAP = [
+  [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+  [2,1,1,1,1,0,0,0,0,0,0,0,0,0,2],
+  [2,0,0,0,1,0,0,0,0,0,0,0,0,0,2],
+  [2,0,0,0,1,1,1,1,1,0,0,0,0,0,2],
+  [2,0,0,0,0,0,0,0,1,0,0,0,0,0,2],
+  [2,0,0,0,0,0,0,0,1,1,1,1,1,1,2],
+  [2,0,0,0,0,0,0,0,0,0,0,0,0,1,2],
+  [2,0,0,0,0,0,0,0,0,0,0,0,0,1,2],
+  [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+];
+
+// Path waypoints (enemy follows these)
+const PATH = [
+  {c:1,r:1},{c:2,r:1},{c:3,r:1},{c:4,r:1},
+  {c:4,r:2},{c:4,r:3},
+  {c:5,r:3},{c:6,r:3},{c:7,r:3},{c:8,r:3},
+  {c:8,r:4},{c:8,r:5},
+  {c:9,r:5},{c:10,r:5},{c:11,r:5},{c:12,r:5},{c:13,r:5},
+  {c:13,r:6},{c:13,r:7},
+];
+
+// ═══════════ HERO TYPES ═══════════
+const HERO_TYPES = [
+  {id:0, name:'劍士',   cost:50,  dmg:15, range:90,  rate:40,  ico:'⚔️', color:'#4488ff', sx:0, sy:5},
+  {id:1, name:'弓箭手', cost:75,  dmg:10, range:160, rate:25,  ico:'🏹', color:'#44dd44', sx:1, sy:5},
+  {id:2, name:'法師',   cost:100, dmg:25, range:120, rate:50,  ico:'🔮', color:'#cc44ff', sx:2, sy:5},
+  {id:3, name:'騎士',   cost:150, dmg:35, range:60,  rate:60,  ico:'🛡️', color:'#ff8844', sx:3, sy:5},
+];
+
+// ═══════════ ENEMY TYPES ═══════════
+const ENEMY_TYPES = [
+  {name:'史萊姆', hp:30,  spd:1.0, gold:8,  ico:'🟢', sx:0, sy:7},
+  {name:'哥布林', hp:50,  spd:1.3, gold:12, ico:'👺', sx:1, sy:7},
+  {name:'骷髏',   hp:80,  spd:1.6, gold:18, ico:'💀', sx:2, sy:7},
+  {name:'惡魔',   hp:150, spd:1.0, gold:30, ico:'👿', sx:3, sy:7},
+  {name:'BOSS',   hp:400, spd:0.6, gold:100,ico:'🐉', sx:4, sy:7},
+];
+
+// ═══════════ GAME STATE ═══════════
+let gold=100, lives=20, kills=0, wave=0, score=0;
+let heroes=[], enemies=[], projectiles=[], particles=[];
+let selectedHero=0, gameRunning=false, waveSpawning=false, spawnCount=0, spawnTimer=0, waveEnemies=[];
+let mouse={x:0,y:0,gridX:-1,gridY:-1};
+
+const canvas=document.getElementById('gc');
+const ctx=canvas.getContext('2d');
+canvas.width=W; canvas.height=H+36+52;
+
+// ═══════════ UI SETUP ═══════════
+function setupUI(){
+  const panel=document.getElementById('heroPanel');
+  panel.innerHTML='';
+  HERO_TYPES.forEach((h,i)=>{
+    const btn=document.createElement('div');
+    btn.className='hb'+(i===0?' sel':'');
+    btn.innerHTML=`<div class="ico">${h.ico}</div><div class="nm">${h.name}</div><div class="cost">💰${h.cost}</div>`;
+    btn.onclick=()=>{selectHero(i);};
+    panel.appendChild(btn);
+  });
+}
+function selectHero(i){
+  selectedHero=i;
+  document.querySelectorAll('.hb').forEach((b,j)=>b.className='hb'+(j===i?' sel':''));
+  document.getElementById('statusTxt').textContent=HERO_TYPES[i].name+' - 點地圖放置';
+}
+function updateUI(){
+  document.getElementById('goldV').textContent=gold;
+  document.getElementById('lifeV').textContent=lives;
+  document.getElementById('waveV').textContent=wave;
+  document.getElementById('killV').textContent=kills;
+}
+
+// ═══════════ HERO ═══════════
+class Hero{
+  constructor(type,r,c){
+    this.type=type;
+    this.r=r; this.c=c;
+    this.x=c*TILE+TILE/2; this.y=r*TILE+TILE/2+36;
+    this.cooldown=0; this.level=1;
+  }
+  update(){
+    if(this.cooldown>0) this.cooldown--;
+    // Find target
+    let target=null, minDist=Infinity;
+    for(const e of enemies){
+      const d=dist(this.x,this.y,e.x,e.y);
+      if(d<this.type.range && d<minDist){minDist=d;target=e;}
+    }
+    if(target && this.cooldown===0){
+      this.cooldown=this.type.rate;
+      projectiles.push(new Projectile(this.x,this.y,target,this.type.dmg*this.level,this.type.color));
+    }
+  }
+  draw(){
+    const t=this.type;
+    const sx=t.sx*TILE_S, sy=t.sy*TILE_S;
+    const px=this.x-TILE/2, py=this.y-TILE/2;
+    // Draw hero sprite from tilesheet
+    if(TD_IMG.complete){
+      ctx.drawImage(TD_IMG, sx,sy,TILE_S,TILE_S, px,py,TILE,TILE);
+    } else {
+      ctx.fillStyle=t.color; ctx.font='24px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(t.ico,this.x,this.y+8);
+    }
+    // Level star
+    if(this.level>1){
+      ctx.fillStyle='#ffd700'; ctx.font='10px sans-serif'; ctx.textAlign='left';
+      ctx.fillText('★'.repeat(Math.min(this.level-1,3)),px+2,py-2);
+    }
+    // Range circle (transparent)
+    if(selectedHero===this.type.id){
+      ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(this.x,this.y,t.type.range,0,Math.PI*2); ctx.stroke();
+    }
+  }
+}
+
+// ═══════════ ENEMY ═══════════
+class Enemy{
+  constructor(type,pathIdx){
+    this.type=type;
+    this.maxHp=type.hp*(1+wave*0.15);
+    this.hp=this.maxHp;
+    this.spd=type.spd*(1+wave*0.03);
+    this.pathIdx=pathIdx||0;
+    const p=PATH[this.pathIdx];
+    this.x=p.c*TILE+TILE/2; this.y=p.r*TILE+TILE/2+36;
+    this.gold=type.gold+Math.floor(wave/2);
+    this.alive=true; this.hitFlash=0;
+  }
+  update(){
+    if(!this.alive) return;
+    if(this.hitFlash>0) this.hitFlash--;
+    if(this.pathIdx>=PATH.length-1){this.alive=false;lives--;updateUI();return;}
+    const target=PATH[this.pathIdx+1];
+    const tx=target.c*TILE+TILE/2, ty=target.r*TILE+TILE/2+36;
+    const dx=tx-this.x, dy=ty-this.y;
+    const d=Math.sqrt(dx*dx+dy*dy);
+    if(d<this.spd){this.pathIdx++;this.x=tx;this.y=ty;}
+    else{this.x+=dx/d*this.spd;this.y+=dy/d*this.spd;}
+    if(lives<=0) gameOver();
+  }
+  draw(){
+    const t=this.type;
+    const sx=t.sx*TILE_S, sy=t.sy*TILE_S;
+    const px=this.x-TILE/2, py=this.y-TILE/2;
+    // Flash on hit
+    if(this.hitFlash>0){
+      ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.fillRect(px,py,TILE,TILE);
+    }
+    if(TD_IMG.complete){
+      ctx.drawImage(TD_IMG, sx,sy,TILE_S,TILE_S, px,py,TILE,TILE);
+    } else {
+      ctx.fillStyle='#ff4444'; ctx.font='24px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(t.ico,this.x,this.y+8);
+    }
+    // HP bar
+    const bw=TILE, bh=4;
+    ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(px,py-6,bw,bh);
+    ctx.fillStyle=this.hp/this.maxHp>0.5?'#44ff44':this.hp/this.maxHp>0.25?'#ffff44':'#ff4444';
+    ctx.fillRect(px+1,py-5,Math.max(0,(bw-2)*this.hp/this.maxHp),bh-2);
+  }
+}
+
+// ═══════════ PROJECTILE ═══════════
+class Projectile{
+  constructor(x,y,target,dmg,color){
+    this.x=x; this.y=y; this.target=target; this.dmg=dmg; this.color=color;
+    this.alive=true; this.spd=6;
+  }
+  update(){
+    if(!this.alive||!this.target.alive){this.alive=false;return;}
+    const dx=this.target.x-this.x, dy=this.target.y-this.y;
+    const d=Math.sqrt(dx*dx+dy*dy);
+    if(d<this.spd){
+      this.target.hp-=this.dmg;
+      this.target.hitFlash=5;
+      this.alive=false;
+      particles.push({x:this.target.x,y:this.target.y,t:10,c:this.color});
+      if(this.target.hp<=0){
+        this.target.alive=false;
+        gold+=this.target.gold; kills++; score+=10;
+        particles.push({x:this.target.x,y:this.target.y,t:20,c:'#ffd700'});
+        updateUI();
+      }
+    } else {
+      this.x+=dx/d*this.spd; this.y+=dy/d*this.spd;
+    }
+  }
+  draw(){
+    ctx.fillStyle=this.color;
+    ctx.beginPath(); ctx.arc(this.x,this.y,3,0,Math.PI*2); ctx.fill();
+  }
+}
+
+// ═══════════ WAVES ═══════════
+function nextWave(){
+  if(gameOverFlag) return;
+  wave++; waveSpawning=true;
+  // Determine enemy composition
+  const count=5+wave*2;
+  const maxType=Math.min(Math.floor(wave/3),ENEMY_TYPES.length-1);
+  waveEnemies=[];
+  for(let i=0;i<count;i++){
+    const typeIdx=Math.floor(Math.random()*(maxType+1+Math.floor(wave/5)));
+    waveEnemies.push({type:Math.min(typeIdx,ENEMY_TYPES.length-1),delay:i*20});
+  }
+  spawnCount=0; spawnTimer=0;
+  document.getElementById('statusTxt').textContent=`🌊 第 ${wave} 波來襲！ (${count}隻敵人)`;
+  updateUI();
+}
+
+function updateSpawning(){
+  if(!waveSpawning||waveEnemies.length===0){waveSpawning=false;return;}
+  spawnTimer++;
+  if(spawnTimer>=waveEnemies[0].delay){
+    const data=waveEnemies.shift();
+    const e=new Enemy(ENEMY_TYPES[data.type]);
+    enemies.push(e);
+    spawnTimer=0;
+    // Recalc delays
+    waveEnemies.forEach((w,i)=>w.delay=10);
+  }
+}
+
+let gameOverFlag=false;
+function gameOver(){
+  gameOverFlag=true; gameRunning=false;
+  document.getElementById('msgTitle').textContent='💀 遊戲結束';
+  document.getElementById('msgDesc').innerHTML=`抵達第 ${wave} 波<br>擊殺 ${kills} 隻敵人<br>得分 ${score}`;
+  document.getElementById('msg').style.display='block';
+}
+function winGame(){
+  gameRunning=false;
+  document.getElementById('msgTitle').textContent='🎉 勝利！';
+  document.getElementById('msgDesc').innerHTML=`成功守護所有 ${wave} 波！<br>擊殺 ${kills} 隻敵人<br>得分 ${score}`;
+  document.getElementById('msg').style.display='block';
+}
+function restartGame(){
+  gold=100; lives=20; kills=0; wave=0; score=0;
+  heroes=[]; enemies=[]; projectiles=[]; particles=[];
+  waveSpawning=false; gameOverFlag=false;
+  document.getElementById('msg').style.display='none';
+  document.getElementById('statusTxt').textContent='選擇勇者後點地圖放置';
+  updateUI();
+  gameRunning=true;
+  setTimeout(()=>nextWave(),1000);
+}
+function startGame(){
+  document.getElementById('startBtn').style.display='none';
+  gameRunning=true;
+  gold=150;
+  updateUI();
+  setTimeout(()=>nextWave(),1000);
+}
+
+// ═══════════ DRAW ═══════════
+function drawMap(){
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const t=MAP[r][c];
+    let sx,sy;
+    if(t===0){sx=0;sy=0;} // grass floor
+    else if(t===1){sx=1;sy=0;} // stone floor (path)
+    else {sx=0;sy=2;} // wall
+    const px=c*TILE, py=r*TILE+36;
+    if(TD_IMG.complete){
+      ctx.drawImage(TD_IMG, sx*TILE_S,sy*TILE_S,TILE_S,TILE_S, px,py,TILE,TILE);
+    } else {
+      ctx.fillStyle=t===2?'#444':'#666'; ctx.fillRect(px,py,TILE,TILE);
+    }
+  }
+  // Grid highlight
+  if(mouse.gridX>=0&&mouse.gridY>=0&&gameRunning){
+    const gx=mouse.gridX*TILE, gy=mouse.gridY*TILE+36;
+    ctx.strokeStyle='rgba(255,215,0,0.2)'; ctx.lineWidth=2;
+    ctx.strokeRect(gx,gy,TILE,TILE);
+    // Show range if hero selected
+    const h=HERO_TYPES[selectedHero];
+    ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(gx+TILE/2,gy+TILE/2,h.range,0,Math.PI*2); ctx.stroke();
+  }
+}
+
+function dist(x1,y1,x2,y2){return Math.sqrt((x1-x2)**2+(y1-y2)**2);}
+
+// ═══════════ MAIN LOOP ═══════════
+function update(){
+  if(!gameRunning) return;
+  // Spawn
+  updateSpawning();
+  // Heroes
+  for(const h of heroes) h.update();
+  // Enemies
+  for(const e of enemies) if(e.alive) e.update();
+  enemies=enemies.filter(e=>e.alive);
+  // Projectiles
+  for(const p of projectiles) if(p.alive) p.update();
+  projectiles=projectiles.filter(p=>p.alive);
+  // Particles
+  for(const p of particles) p.t--;
+  particles=particles.filter(p=>p.t>0);
+  // Check wave complete
+  if(!waveSpawning&&enemies.length===0&&!gameOverFlag){
+    setTimeout(()=>{if(gameRunning&&!gameOverFlag)nextWave();},2000);
+  }
+  updateUI();
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Background
+  ctx.fillStyle='#0a0a1a'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  drawMap();
+  // Heroes
+  for(const h of heroes) h.draw();
+  // Enemies
+  for(const e of enemies) e.draw();
+  // Projectiles
+  for(const p of projectiles) if(p.alive) p.draw();
+  // Particles
+  for(const p of particles){
+    const alpha=p.t/20;
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle=p.c; ctx.beginPath(); ctx.arc(p.x,p.y,4,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+  }
+  requestAnimationFrame(draw);
+}
+
+// ═══════════ INPUT ═══════════
+canvas.addEventListener('click',e=>{
+  if(!gameRunning) return;
+  const rect=canvas.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)/rect.width*canvas.width;
+  const my=(e.clientY-rect.top)/rect.height*canvas.height-36;
+  const c=Math.floor(mx/TILE), r=Math.floor(my/TILE);
+  if(r<0||r>=ROWS||c<0||c>=COLS)return;
+  // Check if valid placement (grass only)
+  if(MAP[r][c]!==0) return;
+  // Check no existing hero at same position
+  if(heroes.some(h=>h.r===r&&h.c===c)) return;
+  // Check gold
+  const type=HERO_TYPES[selectedHero];
+  if(gold<type.cost) {document.getElementById('statusTxt').textContent='❌ 金幣不足！'; return;}
+  gold-=type.cost;
+  heroes.push(new Hero(type,r,c));
+  updateUI();
+  document.getElementById('statusTxt').textContent=`${type.name} 已放置！`;
+});
+
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)/rect.width*canvas.width;
+  const my=(e.clientY-rect.top)/rect.height*canvas.height-36;
+  mouse.gridX=Math.floor(mx/TILE); mouse.gridY=Math.floor(my/TILE);
+});
+
+// ═══════════ INIT ═══════════
+const ROWS=MAP.length, COLS=MAP[0].length;
+setupUI();
+draw();
+setInterval(update,1000/60);
+</script>
+</body>
+</html>
