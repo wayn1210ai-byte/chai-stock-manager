@@ -261,16 +261,16 @@ class Projectile{
 function nextWave(){
   if(gameOverFlag) return;
   wave++; waveSpawning=true;
-  // Determine enemy composition
-  const count=5+wave*2;
-  const maxType=Math.min(Math.floor(wave/3),ENEMY_TYPES.length-1);
+  const count=4+wave; // 波1=5隻, 波5=9隻
+  const maxType=Math.min(Math.floor((wave-1)/3),ENEMY_TYPES.length-1);
   waveEnemies=[];
   for(let i=0;i<count;i++){
-    const typeIdx=Math.floor(Math.random()*(maxType+1+Math.floor(wave/5)));
-    waveEnemies.push({type:Math.min(typeIdx,ENEMY_TYPES.length-1),delay:i*20});
+    const typeIdx=Math.floor(Math.random()*(maxType+1));
+    // 每隻間隔 60~90 frames (1~1.5秒)
+    waveEnemies.push({type:Math.min(typeIdx,ENEMY_TYPES.length-1), delay:60+Math.floor(Math.random()*30)});
   }
   spawnCount=0; spawnTimer=0;
-  document.getElementById('statusTxt').textContent=`🌊 第 ${wave} 波來襲！ (${count}隻敵人)`;
+  document.getElementById('statusTxt').textContent='🌊 第 '+wave+' 波！ ('+count+'隻)';
   updateUI();
 }
 
@@ -282,8 +282,6 @@ function updateSpawning(){
     const e=new Enemy(ENEMY_TYPES[data.type]);
     enemies.push(e);
     spawnTimer=0;
-    // Recalc delays
-    waveEnemies.forEach((w,i)=>w.delay=10);
   }
 }
 
@@ -313,9 +311,10 @@ function restartGame(){
 function startGame(){
   document.getElementById('startBtn').style.display='none';
   gameRunning=true;
-  gold=150;
+  gold=200; // 更多起始金幣
   updateUI();
-  setTimeout(()=>nextWave(),1000);
+  document.getElementById('statusTxt').textContent='放置勇者！敵人即將來襲！';
+  setTimeout(()=>nextWave(),3000); // 3秒緩衝
 }
 
 // ═══════════ DRAW ═══════════
