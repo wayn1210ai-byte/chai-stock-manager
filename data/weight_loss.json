@@ -1,0 +1,33 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "測試用",
+      "animal": "🐕",
+      "start_weight": 90.0,
+      "target_weight": 75.0,
+      "height": 170,
+      "created": "2026-05-25T11:49:42.556023"
+    },
+    {
+      "id": 2,
+      "name": "柴柴",
+      "animal": "🐕",
+      "start_weight": 90.0,
+      "target_weight": 75.0,
+      "height": 170,
+      "created": "2026-05-25T12:03:48.152162"
+    }
+  ],
+  "steps": {
+    "1": {}
+  },
+  "weights": {
+    "1": {}
+  },
+  "badges": {
+    "1": {}
+  },
+  "challenges": {},
+  "next_id": 3
+}
