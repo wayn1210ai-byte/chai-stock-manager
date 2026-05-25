@@ -7,79 +7,87 @@ from flask import Blueprint, request, jsonify, send_from_directory
 DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(DIR, 'data')
 WL_FILE = os.path.join(DATA_DIR, 'weight_loss.json')
-DATABASE_URL = os.environ.get('DATABASE_URL', '') or os.environ.get('RENDER_DATABASE_URL', '') or ''
 
 wl = Blueprint('weight_loss', __name__)
 
 # ═══════════════ DATABASE SETUP ═══════════════
+# NOTE: DATABASE_URL is read LAZILY (on first request), not at import time.
+# This is because stock_server.py imports this module BEFORE it finishes
+# fixing the DATABASE_URL (it writes the fixed URL back to os.environ).
+# By reading lazily, we ensure we get the already-fixed URL.
 
-def _fix_render_db_url(url):
-    """Fix Render internal hostname - try appending domain suffix"""
-    if not url: return url
-    import re as _re
-    # Try common Render patterns
-    hostnames = ['render.com']
-    for h in hostnames:
-        m = _re.match(r'(postgresql://[^@]+@)([^:]+)(.*)', url)
-        if m and '.' not in m.group(2) and m.group(2) != 'localhost':
-            return m.group(1) + m.group(2) + '.' + h + m.group(3)
-        # Already has dots
-        if m and '.' in m.group(2):
-            return url
-    return url
-
-# Try multiple env var names like stock_server
-DATABASE_URL = ''
-for key in ['DATABASE_URL', 'RENDER_DATABASE_URL', 'CHAI_STOCK_DB_DATABASE_URL',
-            'CHAI_STOCK_DB_URL', 'POSTGRES_URL', 'POSTGRESQL_URL']:
-    val = os.environ.get(key, '')
-    if val:
-        DATABASE_URL = val
-        break
-
-DATABASE_URL = _fix_render_db_url(DATABASE_URL)
-DB_URL = DATABASE_URL
-_use_pg = bool(DB_URL)
 _pg_conn = None
 _pg_error = None
+_db_initialized = False
 
-def _get_pg():
+def _init_db():
+    """Lazy-init: read DATABASE_URL from os.environ AFTER stock_server has fixed it."""
+    global _db_initialized, _pg_error
+    if _db_initialized:
+        return
+    _db_initialized = True
+
+    url = ''
+    for key in ['DATABASE_URL', 'RENDER_DATABASE_URL', 'CHAI_STOCK_DB_DATABASE_URL',
+                'CHAI_STOCK_DB_URL', 'POSTGRES_URL', 'POSTGRESQL_URL']:
+        val = os.environ.get(key, '')
+        if val:
+            url = val
+            break
+
+    if not url:
+        _pg_error = 'No DATABASE_URL found in environment'
+        return
+
+    # Fix Render internal hostname
+    m = re.match(r'(postgresql://[^@]+@)([^:]+)(.*)', url)
+    if m and '.' not in m.group(2) and m.group(2) != 'localhost':
+        url = m.group(1) + m.group(2) + '.render.com' + m.group(3)
+
+    _pg_connect(url)
+
+def _pg_connect(url):
+    """Try to connect to PostgreSQL with multiple SSL modes."""
     global _pg_conn, _pg_error
-    if not _use_pg:
-        return None
     try:
         import psycopg2
-        if _pg_conn and _pg_conn.closed:
-            _pg_conn = None
-        if not _pg_conn:
-            # Debug: try to print out what URL we have
-            import sys as _sys
-            print(f'🔄 WL connecting to DB... URL starts with: {DB_URL[:40] if DB_URL else "EMPTY"}...', flush=True)
-            _sys.stdout.flush()
-            connected = False
-            for ssl in ['require', 'allow', 'prefer']:
-                try:
-                    conn = psycopg2.connect(DB_URL, sslmode=ssl, connect_timeout=10)
-                    conn.autocommit = True
-                    cur = conn.cursor()
-                    cur.execute('SELECT 1')
-                    cur.close()
-                    connected = True
-                    break
-                except Exception:
-                    continue
-            if connected:
-                _pg_conn = psycopg2.connect(DB_URL, sslmode='require')
-                _pg_conn.autocommit = True
-                _init_pg_tables()
-            else:
-                _pg_error = 'All SSL modes failed'
-                return None
-        return _pg_conn
+        connected = False
+        for ssl in ['require', 'allow', 'prefer']:
+            try:
+                conn = psycopg2.connect(url, sslmode=ssl, connect_timeout=10)
+                conn.autocommit = True
+                cur = conn.cursor()
+                cur.execute('SELECT 1')
+                cur.close()
+                connected = True
+                break
+            except Exception:
+                continue
+        if connected:
+            _pg_conn = psycopg2.connect(url, sslmode='require')
+            _pg_conn.autocommit = True
+            _init_pg_tables()
+            _pg_error = None
+        else:
+            _pg_error = 'All SSL modes failed'
     except Exception as e:
-        print(f'⚠️ WL PostgreSQL connect error: {e}')
         _pg_error = str(e)
+        print(f'⚠️ WL PostgreSQL connect error: {e}')
+
+def _get_pg():
+    global _pg_conn
+    _init_db()  # lazy init on first call
+    if not _pg_conn:
         return None
+    try:
+        if _pg_conn.closed:
+            _pg_conn = None
+            _pg_error = 'Connection was closed'
+            return None
+    except Exception:
+        _pg_conn = None
+        return None
+    return _pg_conn
 
 def _init_pg_tables():
     try:
@@ -417,13 +425,11 @@ def api_rankings():
 
 @wl.route('/api/status')
 def api_status():
-    err = _pg_error
     return jsonify({
         'ok': True,
-        'database': 'PostgreSQL' if _use_pg and _get_pg() else 'JSON 檔案',
-        'connected': bool(_use_pg and _get_pg()),
-        'url_prefix': DB_URL[:50] + '...' if DB_URL else 'EMPTY',
-        'error': str(err) if err else None,
+        'database': 'PostgreSQL' if _get_pg() else 'JSON 檔案',
+        'connected': bool(_get_pg()),
+        'error': _pg_error,
     })
 
 # ═══════════════ REGISTER BLUEPRINT ═══════════════

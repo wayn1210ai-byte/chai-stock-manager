@@ -33,6 +33,9 @@ def _fix_render_db_url(url):
     return url
 
 DATABASE_URL = _fix_render_db_url(DATABASE_URL)
+# Write fixed URL back to env so lazy-imported modules (like weight_loss_api) get it
+if DATABASE_URL:
+    os.environ['DATABASE_URL'] = DATABASE_URL
 lock = threading.Lock()
 
 os.makedirs(DATA_DIR, exist_ok=True)
