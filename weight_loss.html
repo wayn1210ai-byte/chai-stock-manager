@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,maximum-scale=1.0">
 <title>🐾 莊敬商科動物園減肥大賽</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js"></script>
 <style>
 /* ═══════ RESET & BASE ═══════ */
 *{margin:0;padding:0;box-sizing:border-box}
@@ -556,6 +557,8 @@ function enterApp() {
   document.getElementById('bottomNav').classList.remove('hide');
   applyUserAnimal();
   loadAll();
+  // Twemoji
+  if (typeof twemoji !== 'undefined') twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' });
 }
 
 function applyUserAnimal() {
@@ -594,6 +597,10 @@ async function loadAll() {
   updateMap();
   updateBadges();
   updateChallenges();
+  // Twemoji: 把所有 emoji 換成可愛 SVG 圖片
+  if (typeof twemoji !== 'undefined') {
+    twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' });
+  }
 }
 
 function getUserAnimal(uid) {
@@ -620,6 +627,7 @@ function switchPage(id) {
   if(id==='pageMap') updateMap();
   if(id==='pageBadge') updateBadges();
   if(id==='pageChallenge') updateChallenges();
+  if (typeof twemoji !== 'undefined') twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' });
 }
 
 // ═══════════ DASHBOARD ═══════════
@@ -778,6 +786,7 @@ async function saveSteps() {
     updateStepsPage();
     updateDashboard();
     checkBadges();
+    if (typeof twemoji !== 'undefined') twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' });
   } else {
     toast(res.error || '記錄失敗');
   }
@@ -829,6 +838,7 @@ async function saveWeight() {
     updateWeightPage();
     updateDashboard();
     checkBadges();
+    if (typeof twemoji !== 'undefined') twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' });
     if(res.newBadge) showConfetti();
   } else {
     toast(res.error || '記錄失敗');
