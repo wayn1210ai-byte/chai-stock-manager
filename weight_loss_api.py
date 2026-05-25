@@ -13,14 +13,31 @@ wl = Blueprint('weight_loss', __name__)
 
 # ═══════════════ DATABASE SETUP ═══════════════
 
-def _fix_db_url(url):
-    """Fix Render internal hostname if missing TLD"""
+def _fix_render_db_url(url):
+    """Fix Render internal hostname - try appending domain suffix"""
     if not url: return url
-    m = re.match(r'(postgresql://[^@]+@)([^:]+)(.*)', url)
-    if m and '.' not in m.group(2) and m.group(2) != 'localhost':
-        return m.group(1) + m.group(2) + '.render.com' + m.group(3)
+    import re as _re
+    # Try common Render patterns
+    hostnames = ['render.com']
+    for h in hostnames:
+        m = _re.match(r'(postgresql://[^@]+@)([^:]+)(.*)', url)
+        if m and '.' not in m.group(2) and m.group(2) != 'localhost':
+            return m.group(1) + m.group(2) + '.' + h + m.group(3)
+        # Already has dots
+        if m and '.' in m.group(2):
+            return url
     return url
 
+# Try multiple env var names like stock_server
+DATABASE_URL = ''
+for key in ['DATABASE_URL', 'RENDER_DATABASE_URL', 'CHAI_STOCK_DB_DATABASE_URL',
+            'CHAI_STOCK_DB_URL', 'POSTGRES_URL', 'POSTGRESQL_URL']:
+    val = os.environ.get(key, '')
+    if val:
+        DATABASE_URL = val
+        break
+
+DATABASE_URL = _fix_render_db_url(DATABASE_URL)
 DB_URL = DATABASE_URL
 _use_pg = bool(DB_URL)
 _pg_conn = None
@@ -34,9 +51,24 @@ def _get_pg():
         if _pg_conn and _pg_conn.closed:
             _pg_conn = None
         if not _pg_conn:
-            _pg_conn = psycopg2.connect(DB_URL, sslmode='require', connect_timeout=10)
-            _pg_conn.autocommit = True
-            _init_pg_tables()
+            connected = False
+            for ssl in ['require', 'allow', 'prefer']:
+                try:
+                    conn = psycopg2.connect(DB_URL, sslmode=ssl, connect_timeout=10)
+                    conn.autocommit = True
+                    cur = conn.cursor()
+                    cur.execute('SELECT 1')
+                    cur.close()
+                    connected = True
+                    break
+                except Exception:
+                    continue
+            if connected:
+                _pg_conn = psycopg2.connect(DB_URL, sslmode='require')
+                _pg_conn.autocommit = True
+                _init_pg_tables()
+            else:
+                return None
         return _pg_conn
     except Exception as e:
         print(f'⚠️ WL PostgreSQL connect error: {e}')
