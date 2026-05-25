@@ -3,11 +3,11 @@
 import os, json, hashlib, threading, re, time, urllib.request, socket
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory, session
-from flask_cors import CORS
 from weight_loss_api import register_blueprint as register_wl
 
 PORT = int(os.environ.get('PORT', 8765))
 DIR = os.path.dirname(os.path.abspath(__file__))
+KITCHEN_DIR = os.path.join(DIR, 'kitchen')
 DATA_DIR = os.path.join(DIR, 'data')
 USERS_FILE = os.path.join(DATA_DIR, 'users.json')
 DATABASE_URL = os.environ.get('DATABASE_URL', '') or os.environ.get('RENDER_DATABASE_URL', '') or os.environ.get('CHAI_STOCK_DB_DATABASE_URL', '') or os.environ.get('POSTGRES_URL', '')
@@ -385,6 +385,12 @@ def serve_cats():
 @app.route('/heroes')
 def serve_heroes():
     return send_from_directory(DIR, 'heroes_td.html')
+
+# ── 阿柴食堂 Static Route ──
+@app.route('/kitchen/')
+@app.route('/kitchen/<path:filename>')
+def serve_kitchen(filename='index.html'):
+    return send_from_directory(KITCHEN_DIR, filename)
 
 try:
     register_wl(app)
