@@ -4,6 +4,7 @@ import os, json, hashlib, threading, re, time, urllib.request, socket
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory, session
 from flask_cors import CORS
+from weight_loss_api import register_blueprint as register_wl
 
 PORT = int(os.environ.get('PORT', 8765))
 DIR = os.path.dirname(os.path.abspath(__file__))
@@ -381,6 +382,12 @@ def serve_cats():
 @app.route('/heroes')
 def serve_heroes():
     return send_from_directory(DIR, 'heroes_td.html')
+
+try:
+    register_wl(app)
+    print('✅ 減肥比賽路由已註冊')
+except Exception as e:
+    print(f'⚠️ 減肥比賽路由註冊失敗: {e}')
 
 if __name__ == '__main__':
     hostname = socket.gethostname()
