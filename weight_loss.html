@@ -703,7 +703,7 @@ function applyUserAnimal() {
 
 // ═══════════ LOAD DATA ═══════════
 async function loadAll() {
-  const [uRes, sRes, wRes, bRes, cRes, lRes] = await Promise.all([
+  const results = await Promise.allSettled([
     api('/users'),
     api('/steps/'+currentUser.id),
     api('/weights/'+currentUser.id),
@@ -711,12 +711,12 @@ async function loadAll() {
     api('/challenges/'+currentUser.id),
     api('/leaderboard')
   ]);
-  if(uRes.ok) users = uRes.users;
-  if(sRes.ok) stepsData = sRes.steps||{};
-  if(wRes.ok) weightsData = wRes.weights||{};
-  if(bRes.ok) badgesData = bRes.badges||{};
-  if(cRes.ok) challengeData = cRes;
-  if(lRes.ok) window._leaderboard = lRes.ranking||[];
+  if(results[0].status==='fulfilled' && results[0].value.ok) users = results[0].value.users;
+  if(results[1].status==='fulfilled' && results[1].value.ok) stepsData = results[1].value.steps||{};
+  if(results[2].status==='fulfilled' && results[2].value.ok) weightsData = results[2].value.weights||{};
+  if(results[3].status==='fulfilled' && results[3].value.ok) badgesData = results[3].value.badges||{};
+  if(results[4].status==='fulfilled' && results[4].value.ok) challengeData = results[4].value;
+  if(results[5].status==='fulfilled' && results[5].value.ok) window._leaderboard = results[5].value.ranking||[];
   
   setAnimalMsg();
   updateDashboard();
