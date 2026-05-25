@@ -1032,15 +1032,15 @@ function showConfetti() {
 }
 
 console.log('🐾 莊敬動物園減肥大賽 App 載入完成！');
-// 最後一次轉換 emoji 到 SVG
+// 轉換 emoji 成 SVG
 if (typeof twemoji !== 'undefined') {
-  (function retryTwemoji(maxTries) {
-    twemoji.parse(document.body, { folder: 'svg', ext: '.svg' });
-    if (document.querySelectorAll('img.emoji, img[src*="twemoji"]').length === 0 && maxTries > 0) {
-      setTimeout(function() { retryTwemoji(maxTries - 1); }, 200);
-    }
-  })(20);
+  twemoji.parse(document.body, { folder: 'svg', ext: '.svg' });
 }
+window.addEventListener('load', function() {
+  if (typeof twemoji !== 'undefined') {
+    twemoji.parse(document.body, { folder: 'svg', ext: '.svg' });
+  }
+});
 </script>
 </body>
 </html>
