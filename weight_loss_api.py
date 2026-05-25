@@ -41,9 +41,10 @@ DATABASE_URL = _fix_render_db_url(DATABASE_URL)
 DB_URL = DATABASE_URL
 _use_pg = bool(DB_URL)
 _pg_conn = None
+_pg_error = None
 
 def _get_pg():
-    global _pg_conn
+    global _pg_conn, _pg_error
     if not _use_pg:
         return None
     try:
@@ -51,6 +52,10 @@ def _get_pg():
         if _pg_conn and _pg_conn.closed:
             _pg_conn = None
         if not _pg_conn:
+            # Debug: try to print out what URL we have
+            import sys as _sys
+            print(f'🔄 WL connecting to DB... URL starts with: {DB_URL[:40] if DB_URL else "EMPTY"}...', flush=True)
+            _sys.stdout.flush()
             connected = False
             for ssl in ['require', 'allow', 'prefer']:
                 try:
@@ -68,10 +73,12 @@ def _get_pg():
                 _pg_conn.autocommit = True
                 _init_pg_tables()
             else:
+                _pg_error = 'All SSL modes failed'
                 return None
         return _pg_conn
     except Exception as e:
         print(f'⚠️ WL PostgreSQL connect error: {e}')
+        _pg_error = str(e)
         return None
 
 def _init_pg_tables():
@@ -410,10 +417,13 @@ def api_rankings():
 
 @wl.route('/api/status')
 def api_status():
+    err = _pg_error
     return jsonify({
         'ok': True,
         'database': 'PostgreSQL' if _use_pg and _get_pg() else 'JSON 檔案',
         'connected': bool(_use_pg and _get_pg()),
+        'url_prefix': DB_URL[:50] + '...' if DB_URL else 'EMPTY',
+        'error': str(err) if err else None,
     })
 
 # ═══════════════ REGISTER BLUEPRINT ═══════════════
