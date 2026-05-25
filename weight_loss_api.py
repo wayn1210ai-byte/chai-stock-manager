@@ -110,6 +110,7 @@ def _save_users(users):
                 pw = u.get('password', '')
                 cur.execute("INSERT INTO wl_users (id, name, animal, start_weight, target_weight, height, password, created) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
                           (u['id'],u['name'],u['animal'],u['start_weight'],u['target_weight'],u['height'],pw,u['created']))
+            conn.commit()
             cur.close()
             return
         except Exception:
@@ -140,6 +141,7 @@ def _save_steps(uid, date_str, val):
             cur = conn.cursor()
             cur.execute("INSERT INTO wl_steps (user_id, date, value) VALUES (%s,%s,%s) ON CONFLICT (user_id, date) DO UPDATE SET value=%s",
                        (int(uid), date_str, val, val))
+            conn.commit()
             cur.close()
             return
         except Exception:
@@ -170,6 +172,7 @@ def _save_weight(uid, week, val):
             cur = conn.cursor()
             cur.execute("INSERT INTO wl_weights (user_id, week, value) VALUES (%s,%s,%s) ON CONFLICT (user_id, week) DO UPDATE SET value=%s",
                        (int(uid), week, val, val))
+            conn.commit()
             cur.close()
             return
         except Exception:
@@ -200,6 +203,7 @@ def _save_badge(uid, badge_id):
             cur = conn.cursor()
             cur.execute("INSERT INTO wl_badges (user_id, badge_id) VALUES (%s,%s) ON CONFLICT (user_id, badge_id) DO NOTHING",
                        (int(uid), badge_id))
+            conn.commit()
             cur.close()
             return
         except Exception:
