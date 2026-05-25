@@ -307,131 +307,42 @@ img.emoji{height:1.2em;width:1.2em;min-width:16px;min-height:16px;max-width:36px
       <div class="card">
       <div class="card-title">📍 動物大遷徙：台北 → 高雄</div>
       <div class="map-container">
-        <svg viewBox="0 0 200 280" style="width:100%;height:100%;position:absolute;top:0;left:0" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="20 100 920 850" style="width:100%;height:100%;position:absolute;top:0;left:0" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <linearGradient id="seaGrad" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="seaGrad2" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="#b3e5fc"/>
               <stop offset="50%" stop-color="#e1f5fe"/>
               <stop offset="100%" stop-color="#b3e5fc"/>
             </linearGradient>
-            <linearGradient id="islandGrad" x1="0" y1="0" x2="0.3" y2="1">
+            <linearGradient id="islandGrad2" x1="0" y1="0" x2="0.3" y2="1">
               <stop offset="0%" stop-color="#81c784"/>
               <stop offset="100%" stop-color="#4caf50"/>
             </linearGradient>
-            <linearGradient id="mountGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#a5d6a7"/>
-              <stop offset="100%" stop-color="#66bb6a"/>
-            </linearGradient>
-            <filter id="shadow1">
-              <feDropShadow dx="1" dy="2" stdDeviation="1.5" flood-color="#388e3c" flood-opacity="0.2"/>
+            <filter id="shadowTW">
+              <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#2e7d32" flood-opacity="0.3"/>
             </filter>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="2" result="blur"/>
+            <filter id="glowTW">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
               <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
             </filter>
           </defs>
           <!-- 海洋背景 -->
-          <rect x="0" y="0" width="200" height="280" fill="url(#seaGrad)" rx="10"/>
-          <!-- 海浪裝飾線 -->
-          <path d="M0,30 Q20,25 40,30 Q60,35 80,30 Q100,25 120,30 Q140,35 160,30 Q180,25 200,30" fill="none" stroke="#e3f2fd" stroke-width="1.5" opacity="0.5"/>
-          <path d="M0,80 Q25,75 50,80 Q75,85 100,80 Q125,75 150,80 Q175,85 200,80" fill="none" stroke="#e3f2fd" stroke-width="1.2" opacity="0.4"/>
-          <path d="M0,150 Q30,145 60,150 Q90,155 120,150 Q150,145 180,150 Q190,153 200,150" fill="none" stroke="#e3f2fd" stroke-width="1" opacity="0.3"/>
-          <path d="M0,210 Q20,205 40,210 Q60,215 80,210 Q100,205 120,210 Q140,215 160,210 Q180,205 200,210" fill="none" stroke="#e3f2fd" stroke-width="1" opacity="0.3"/>
-          <path d="M0,260 Q30,255 60,260 Q90,265 120,260 Q150,255 180,260 Q190,263 200,260" fill="none" stroke="#e3f2fd" stroke-width="1" opacity="0.2"/>
-          <!-- 北海岸浪花 -->
-          <path d="M95,14 C100,11 105,10 110,12 C115,14 120,13 125,11 C130,9 135,10 138,13" fill="none" stroke="#fff" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
-          <!-- 台灣島嶼輪廓（精緻版） -->
-          <!-- 島嶼影子 -->
-          <path d="M105,17 C90,18 78,24 70,34 C62,44 56,57 52,70 C48,82 44,94 42,107
-                   C40,120 39,132 40,144 C41,156 43,168 46,180
-                   C48,188 50,196 54,204 C58,212 64,220 70,226
-                   C76,232 82,238 88,242 C94,246 100,248 106,250
-                   C110,251 114,252 118,252 C122,252 126,251 130,250
-                   C136,247 142,242 148,236 C154,230 160,222 166,214
-                   C172,206 177,196 180,186 C183,176 184,166 182,156
-                   C180,146 176,138 170,132 C165,127 160,123 155,120
-                   C150,117 145,115 140,114 C135,113 130,112 125,110
-                   C120,108 115,104 112,98 C109,92 108,84 110,76
-                   C112,68 116,60 122,52 C128,44 134,36 138,30
-                   C142,24 144,20 142,17 C140,14 135,14 128,16
-                   L105,17Z" fill="#43a047" opacity="0.08" transform="translate(2,2)"/>
-          <!-- 島嶼本體 -->
-          <path d="M105,15 C90,16 78,22 70,32 C62,42 56,55 52,68 C48,80 44,92 42,105
-                   C40,118 39,130 40,142 C41,154 43,166 46,178
-                   C48,186 50,194 54,202 C58,210 64,218 70,224
-                   C76,230 82,236 88,240 C94,244 100,246 106,248
-                   C110,249 114,250 118,250 C122,250 126,249 130,248
-                   C136,245 142,240 148,234 C154,228 160,220 166,212
-                   C172,204 177,194 180,184 C183,174 184,164 182,154
-                   C180,144 176,136 170,130 C165,125 160,121 155,118
-                   C150,115 145,113 140,112 C135,111 130,110 125,108
-                   C120,106 115,102 112,96 C109,90 108,82 110,74
-                   C112,66 116,58 122,50 C128,42 134,34 138,28
-                   C142,22 144,18 142,15 C140,12 135,12 128,14
-                   L105,15Z" fill="url(#islandGrad)" stroke="#388e3c" stroke-width="1.2" filter="url(#shadow1)"/>
-          <!-- 中央山脈 -->
-          <path d="M125,30 C130,38 133,48 135,58 C137,68 138,78 138,88
-                   C138,98 136,108 132,118 C128,128 122,138 116,148
-                   C112,154 108,160 106,166 C104,172 102,178 100,184" fill="none" stroke="url(#mountGrad)" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
-          <path d="M130,35 C134,45 136,55 137,65" fill="none" stroke="#81c784" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
-          <path d="M120,40 C118,50 114,60 110,70" fill="none" stroke="#a5d6a7" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
-          <!-- 東部海岸裝飾 -->
-          <path d="M145,50 C150,60 153,72 154,84 C155,90 154,96 152,102" fill="none" stroke="#66bb6a" stroke-width="1" opacity="0.3" stroke-linecap="round"/>
-          <!-- 綠島/蘭嶼小點 -->
-          <circle cx="165" cy="208" r="3" fill="#a5d6a7" stroke="#81c784" stroke-width="0.8"/>
-          <text x="165" y="216" text-anchor="middle" font-size="4" fill="#999">綠島</text>
-          <!-- 城市標記 -->
-          <g id="cityGroup0">
-            <circle id="mapCity0" cx="127" cy="22" r="5" fill="#43a047" stroke="#fff" stroke-width="2" filter="url(#glow)"/>
-            <text x="127" y="14" text-anchor="middle" font-size="6.5" fill="#1b5e20" font-weight="bold">台北</text>
-            <!-- 台北101小標記 -->
-            <rect x="125" y="26" width="4" height="6" rx="1" fill="#ff8a65" opacity="0.6"/>
-          </g>
-          <g id="cityGroup1">
-            <circle id="mapCity1" cx="112" cy="42" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
-            <text x="104" y="55" text-anchor="middle" font-size="5.5" fill="#558b2f" font-weight="bold">桃園</text>
-          </g>
-          <g id="cityGroup2">
-            <circle id="mapCity2" cx="98" cy="62" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
-            <text x="90" y="74" text-anchor="middle" font-size="5.5" fill="#558b2f" font-weight="bold">新竹</text>
-          </g>
-          <g id="cityGroup3">
-            <circle id="mapCity3" cx="92" cy="82" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
-            <text x="83" y="94" text-anchor="middle" font-size="5.5" fill="#558b2f" font-weight="bold">苗栗</text>
-          </g>
-          <g id="cityGroup4">
-            <circle id="mapCity4" cx="82" cy="104" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
-            <text x="74" y="116" text-anchor="middle" font-size="5.5" fill="#558b2f" font-weight="bold">台中</text>
-          </g>
-          <g id="cityGroup5">
-            <circle id="mapCity5" cx="76" cy="124" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
-            <text x="65" y="136" text-anchor="middle" font-size="5.5" fill="#558b2f" font-weight="bold">彰化</text>
-          </g>
-          <g id="cityGroup6">
-            <circle id="mapCity6" cx="72" cy="144" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
-            <text x="61" y="156" text-anchor="middle" font-size="5.5" fill="#558b2f" font-weight="bold">雲林</text>
-          </g>
-          <g id="cityGroup7">
-            <circle id="mapCity7" cx="68" cy="164" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
-            <text x="58" y="176" text-anchor="middle" font-size="5.5" fill="#558b2f" font-weight="bold">嘉義</text>
-          </g>
-          <g id="cityGroup8">
-            <circle id="mapCity8" cx="58" cy="188" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
-            <text x="48" y="200" text-anchor="middle" font-size="5.5" fill="#558b2f" font-weight="bold">台南</text>
-          </g>
-          <g id="cityGroup9">
-            <circle id="mapCity9" cx="52" cy="212" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
-            <text x="43" y="225" text-anchor="middle" font-size="5.5" fill="#558b2f" font-weight="bold">高雄</text>
-          </g>
-          <!-- 路線連接線 -->
-          <polyline id="mapRoute" points="" fill="none" stroke="#ff9800" stroke-width="2.5" stroke-dasharray="5,3" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
-          <!-- 羅盤 -->
-          <g transform="translate(180,18)">
-            <circle cx="0" cy="0" r="8" fill="rgba(255,255,255,0.4)" stroke="#fff" stroke-width="0.5"/>
-            <polygon points="0,-7 1.5,0 0,7 -1.5,0" fill="#ff7043"/>
-            <polygon points="-7,0 0,-1.5 7,0 0,1.5" fill="#90a4ae" opacity="0.5"/>
-            <text x="0" y="-11" text-anchor="middle" font-size="5" fill="#fff" font-weight="bold">北</text>
-          </g>
+          <rect x="20" y="100" width="920" height="850" fill="url(#seaGrad2)" rx="8"/>
+          <!-- 台灣島嶼（真實輪廓） -->
+          <path d="M930.2 135.9l-17.3 21.2-2.7 4.4-2.2 6.3-1.4 7.1-0.5 7.1 0.2 6.9 3.1 14.4-0.2 3.6-1.3 3.7 0.2 7.5 3.2 5.8 6 3.7 7.1 1.4 0 1.6-3-0.3-2.9 0.3-2.4 0.8-1.7 1.2 2.4 4.7 1.3 6-0.8 5.2-5.5 3.2-0.4 2.3 0.7 2.7 1.5 2.6 0.6 2.6-2.3 2.2-5.8 3.3-6.5 7.5-0.3 2.9 0.4 6.5-1 2.5-1.2 2.1-0.8 3-0.5 5.9-0.5 1.5-0.9 1.2-0.5 1.3 1 1.5 0.2 0.2 0.6 0.7 0.8 1.4 0.7 1.4 0.2 1-1.3 2.2-5.4 5.3-5.8 8-4.3 3.4-1.4 1.9 0.7 1.9-0.8 1.4-6.2 4.7-2.3 2.2-2.6 5.6-2.7 11.4-6.9 10-1.4 4.1 0.2 4.4 1.7 4.9 1.4 2 1.2 1 0.8 1.3 0 3-1 3.3-3.4 5.3-0.7 3.3-0.3 5.9-3 15.1-5.9 15.9-7.5 37.1-4.4 9.1-10.3 59.5-4.2 24.5-2.1 4.5-6.5 8.7-2.5 4.6-1.9 5.7-1.4 10.6 0.2 9.4-0.9 8.9-4.6 9.3-1.9 2-4.4 3.2-2 2-1 2.1-1.5 5.4-4.5 7.9-2.7 12.1-2 5.4-9.5 13.8-1.2 2.5-12.9 10.9-3 3.6-0.5 2.4 0.6 5.8-0.1 2.6-1.2 3-2 3.3-4.4 5.6-4.4 4.1-14.9 10-10 11-2.5 1.3-1.9 2.5-4.9 12.5-2.4 4.7-7.5 9.3-3 5.5-1.7 11.4-4.5 15.6-8.8 15.5-1.3 5.3-1.6 14.9 0.3 13.6 0.8 47.9-1.5 6.8-2.3 5.6-3.2 2.3-3.7 3.4 0.2 7.8 1.3 8.4-0.3 5.5-4.2-6.3-6.3-4.8-7.3-3.3-7.4-1.8-0.3 6.2-2.1 2.2-3.2-0.8-3.4-2.9-0.2-2.2 1.2-6.5-5.1-8.5-0.4-2.3 0-1.9 0.4-3 0-10 0.5-2.9 2.3-3.3 0.5-2.8-18.5-47.9-1.5-2.6-5.1-6.4-4.1-9.1-1.9-2.7-7.5-5.9-3-1.8-1-0.3-1.1-0.7-0.8-3.5-0.6-1.2-4.1-2.7-9.3-4.4-4.2-2.9-4.5-3.9-2-1.3-2.7-1.2-1.5 0.1-1.7 0.6-2 0.1-12.1-9.5-11.3-15.9 11.9 14.3-1.4-6.8-2-3.8-1.6-2.9-4.9-5.6-8.4-7.8-3.2-3.9-1.5-4.4 2-4.3 1.1-3.8-1.5-5.4-2.4-5.2-4.6-7.1-4.3-9.5-0.9-4.2 0.1-2.7 1.4-3.4 0.3-2.2-0.5-1.2-1.2-0.9-1.3-1.2-0.5-2.1-2.6-4.6-0.7-1.8-2-12.6-0.9-5.8-1.7-3.4-3.6-3.6 4.4-3.2 2.5-5.6-1-4.9-5.9-0.8-1.1 1.7-1 3.1-1.6 2.5-3.1-0.1-1.2-2.1 0.4-6.5-0.7-2.2-3.8-1.7-2.1 1.9-1.8 2.7-2.5 0.7-2.7-2.4-0.7-3.2 0.6-3.1 1.1-2.2 2.8-1.4 3.4-0.5 2.9-0.9 0.9-2.8-1.3-1.4-8.7-2.2 0-1.8 7.3-0.1-0.7-2.4-4-3.4-2.6-3 0.7-3.7 2.3-1.4 2.5-0.8 1.2-2.4-0.7-3.6-1.3-3 0.9-2.7 1.3-3.5 2.1-2.4-0.5-2.1 0.5-2.1 3.1-8.3 1.5-1.6 2.4-0.6-3.5-2.4 1.5-3.7 3.5-0.3 3.1-1.3 1.3 0.4-0.8-2.9-2.1 1.5-1.7-0.5-2.3-0.1 0-3 2.3-5.3 3.4-0.2 5 0-3.4-9.7-3.9-7.4 1.8-3.4 0-1.8-2.8-1.4 0.4-1.6 1.6-1.9 0.8-2.4 3.8-4.9-8 0.5-0.1-8.1 4.2-4.8-0.2-15.2 0.7-11.4 2.6-9.1 4-7.1 1.2-9.3 2.1-8.2 1.2-2.7 5.7-7.6 1-2.5 0.7-1.4 5.2-4 1.4-2.8 1.6-6.6 1.1-2.8 6.5-6.3 1.9-2.6 2.5-7.2 3.9-7.2 5.3-15 2.5-4.3 2.8-2.8 2.3-1.6 2.1-0.9 1.4-1.4 0.6-2.7 1.1-2.6 4.7-3.7 1.1-2.9 0.6-9.3 0.8-2.6 2.5-2.4 10.5-12.3 0.6-0.7 0.7-3 3.1-2.6 2-5.9 2.6-11.5 8.6-15 2.6-9.2 3.1-5.1 12.3-13.7 6.8-7.4 1.7-3.8 0.8-6.1 2.1-5.2 5.4-9.7 1.5-5.8 1.5-2.4 6.2-1.9 1.8-2 1.1-2.4 1.2-2.3 3.9-4.1 4.3-3.1 5.2-1.4 6.6 1.3-0.8-5.1 2.5-3.4 3.4-3.5 1.7-5.4 0.8-1.7 3.3-1.6 1.4-5 5.2-10.6 2-2.8 0.7-1.4-0.1-1.6-0.6-1.7-1-2.1 1.4-2.7 1.6-1.7 0.1-0.1 1.4-2.1 0.5-3.6 0.8-2.7 1.9-2.6 2.5-2 2.3-0.8-0.2-1.2 0.6-2.7 2.1-5.6 1.9-3.1 8.3-13.2 6.4-7.7 6.7-5.6 17.1-5.6 4-2.5 3.4-3.1 4.2-2.2 8.3-3 18.7-3.4 10.4-1.9 4.4-1.7 5.7-4.8 1.8-0.8 2.1-0.4 2.8-0.1 3.2 1.1 1.8 2.5 1.1 2.5 1.5 1.5 3.2-1.3-3.4-5.3-5.4-5.5-2.8-1.7 0.8-2.5 1.7-1.5 1.8-0.8 0.7-0.8 1.9-4.8 3-5.5 6.1-5.5 8.9-4.5 10.2-2.4 10.1 1.2 4.1 3.2 9.3 13.1 3.4 6.9 1-0.4 2.5-0.7 2.9-0.4 2 0.6-0.1 0.8-1 1.2-0.9 1.7 0.1 2 1 1.2 3.4 2.4 0.7 0.9 1.6 1.6 3.6 1.3 42.5 10.3 3 1.9-1.5 3.4-0.4 2.7 0.6 4.8 2.3 8.1 2.4 3.8 2 0.9 6.5-1 3.3 0.3 3.9 1.1 3.5 1.7 1.8 2.4-19.1 9.5-5.2 4.4zm-83.5 773.2l4.3 3.3 1.9 2.2-0.3 2.6-5 1.6-6.9-2.8-6.2-4.4-3.7-3.4 1.1-2.5 0-2.4-1-2.1-1.6-2 18.2 0 0 1.6-0.5 1-0.8 2.3-0.3 2.6 0.8 2.4z" fill="url(#islandGrad2)" stroke="#388e3c" stroke-width="1.5" filter="url(#shadowTW)"/>
+          <!-- 城市標記（由JS動態控制顏色） -->
+          <g id="cityTW0"><circle id="mapCity0" cx="855" cy="175" r="8" fill="#43a047" stroke="#fff" stroke-width="2.5" filter="url(#glowTW)"/><text x="855" y="160" text-anchor="middle" font-size="14" fill="#1b5e20" font-weight="bold">台北</text></g>
+          <g id="cityTW1"><circle id="mapCity1" cx="740" cy="260" r="6" fill="#c8e6c9" stroke="#fff" stroke-width="2"/><text x="720" y="280" text-anchor="middle" font-size="12" fill="#558b2f" font-weight="bold">桃園</text></g>
+          <g id="cityTW2"><circle id="mapCity2" cx="645" cy="340" r="6" fill="#c8e6c9" stroke="#fff" stroke-width="2"/><text x="625" y="360" text-anchor="middle" font-size="12" fill="#558b2f" font-weight="bold">新竹</text></g>
+          <g id="cityTW3"><circle id="mapCity3" cx="590" cy="420" r="6" fill="#c8e6c9" stroke="#fff" stroke-width="2"/><text x="570" y="440" text-anchor="middle" font-size="12" fill="#558b2f" font-weight="bold">苗栗</text></g>
+          <g id="cityTW4"><circle id="mapCity4" cx="510" cy="510" r="6" fill="#c8e6c9" stroke="#fff" stroke-width="2"/><text x="490" y="530" text-anchor="middle" font-size="12" fill="#558b2f" font-weight="bold">台中</text></g>
+          <g id="cityTW5"><circle id="mapCity5" cx="470" cy="590" r="6" fill="#c8e6c9" stroke="#fff" stroke-width="2"/><text x="448" y="610" text-anchor="middle" font-size="12" fill="#558b2f" font-weight="bold">彰化</text></g>
+          <g id="cityTW6"><circle id="mapCity6" cx="425" cy="660" r="6" fill="#c8e6c9" stroke="#fff" stroke-width="2"/><text x="403" y="680" text-anchor="middle" font-size="12" fill="#558b2f" font-weight="bold">雲林</text></g>
+          <g id="cityTW7"><circle id="mapCity7" cx="400" cy="740" r="6" fill="#c8e6c9" stroke="#fff" stroke-width="2"/><text x="378" y="760" text-anchor="middle" font-size="12" fill="#558b2f" font-weight="bold">嘉義</text></g>
+          <g id="cityTW8"><circle id="mapCity8" cx="310" cy="810" r="6" fill="#c8e6c9" stroke="#fff" stroke-width="2"/><text x="285" y="832" text-anchor="middle" font-size="12" fill="#558b2f" font-weight="bold">台南</text></g>
+          <g id="cityTW9"><circle id="mapCity9" cx="260" cy="880" r="6" fill="#c8e6c9" stroke="#fff" stroke-width="2"/><text x="233" y="902" text-anchor="middle" font-size="12" fill="#558b2f" font-weight="bold">高雄</text></g>
+          <!-- 路線線 -->
+          <polyline id="mapRoute2" points="" fill="none" stroke="#ff9800" stroke-width="3.5" stroke-dasharray="8,5" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
         </svg>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:10px;color:#666;margin-top:4px">
@@ -1039,7 +950,7 @@ function updateMap() {
   }
   
   // 高亮路線
-  const route = document.getElementById('mapRoute');
+  const route = document.getElementById('mapRoute2');
   const points = [];
   for(let i=0;i<=reachedCount;i++){
     const dot = document.getElementById('mapCity'+i);
