@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,maximum-scale=1.0">
+<title>🐕 莊敬商科減肥比賽</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* ═══════ RESET & BASE ═══════ */
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient(135deg,#fff5f5,#fce4ec,#f3e5f5);min-height:100vh;padding-bottom:80px;touch-action:manipulation}
+.hide{display:none!important}
+
+/* ═══════ TOP BAR ═══════ */
+#topBar{background:linear-gradient(135deg,#ff9a9e,#fad0c4);padding:12px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 20px rgba(255,154,158,0.3);position:sticky;top:0;z-index:100}
+#topBar .logo{font-size:28px;animation:bounce 2s infinite}
+#topBar h1{font-size:18px;font-weight:800;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,0.15);flex:1}
+#topBar .user-badge{background:rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;font-size:12px;color:#fff;font-weight:700}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+
+/* ═══════ AUTH SCREEN ═══════ */
+#authScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#ff9a9e,#fad0c4,#fbc2eb)}
+#authScreen .logo{font-size:80px;margin-bottom:8px;animation:bounce 2s infinite}
+#authScreen h2{font-size:28px;font-weight:900;color:#fff;text-shadow:2px 2px 8px rgba(0,0,0,0.1);margin-bottom:4px}
+#authScreen p{color:rgba(255,255,255,0.85);font-size:14px;margin-bottom:24px}
+.auth-card{background:rgba(255,255,255,0.95);border-radius:24px;padding:32px 24px;width:100%;max-width:360px;box-shadow:0 8px 40px rgba(0,0,0,0.1)}
+.auth-card input{width:100%;padding:14px 16px;border:2px solid #eee;border-radius:12px;font-size:16px;margin-bottom:12px;outline:none;transition:0.2s}
+.auth-card input:focus{border-color:#ff9a9e}
+.auth-card .btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,#ff9a9e,#fad0c4);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;transition:0.2s}
+.auth-card .btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(255,154,158,0.4)}
+.auth-card .hint{text-align:center;color:#999;font-size:12px;margin-top:12px}
+.auth-card .start-row{display:flex;gap:8px;margin-bottom:8px}
+.auth-card .start-row input{flex:1;margin-bottom:0}
+
+/* ═══════ BOTTOM NAV ═══════ */
+#bottomNav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid #f0f0f0;z-index:100;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 20px rgba(0,0,0,0.05)}
+.nav-item{flex:1;text-align:center;padding:8px 2px;cursor:pointer;color:#bbb;transition:0.2s;font-size:10px;font-weight:600}
+.nav-item .nav-icon{font-size:22px;display:block;margin-bottom:2px}
+.nav-item.active{color:#ff9a9e}
+.nav-item.active .nav-icon{transform:scale(1.1)}
+
+/* ═══════ PAGES ═══════ */
+.page{padding:16px;display:none}
+.page.active{display:block}
+.page-title{font-size:18px;font-weight:800;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+
+/* ═══════ CARDS ═══════ */
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+.card-title{font-size:14px;font-weight:700;color:#666;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.stat-row{display:flex;gap:8px;margin-bottom:8px}
+.stat-box{flex:1;background:linear-gradient(135deg,#f8f9fa,#fff);border-radius:12px;padding:12px;text-align:center}
+.stat-box .num{font-size:22px;font-weight:800;color:#ff9a9e;display:block}
+.stat-box .label{font-size:11px;color:#999;margin-top:2px}
+
+/* ═══════ LEADERBOARD ═══════ */
+.rank-item{display:flex;align-items:center;padding:10px 12px;border-radius:12px;margin-bottom:6px;background:#f8f9fa;gap:10px;transition:0.2s}
+.rank-item.top1{background:linear-gradient(135deg,#fff8e1,#ffecb3);border:1px solid #ffd54f}
+.rank-item.top2{background:linear-gradient(135deg,#f5f5f5,#e0e0e0);border:1px solid #bdbdbd}
+.rank-item.top3{background:linear-gradient(135deg,#fff3e0,#ffccbc);border:1px solid #ffab91}
+.rank-item .rank-num{font-size:18px;font-weight:900;width:28px;text-align:center}
+.rank-item .rank-name{flex:1;font-weight:700;font-size:14px;color:#333}
+.rank-item .rank-data{text-align:right;font-size:12px;color:#666}
+.rank-item .rank-data .val{font-weight:800;color:#ff9a9e;font-size:15px}
+
+/* ═══════ INPUT ═══════ */
+.input-group{margin-bottom:12px}
+.input-group label{display:block;font-size:13px;font-weight:700;color:#666;margin-bottom:4px}
+.input-group input{width:100%;padding:12px 14px;border:2px solid #eee;border-radius:10px;font-size:15px;outline:none;transition:0.2s}
+.input-group input:focus{border-color:#ff9a9e}
+.btn{display:block;width:100%;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:0.2s;text-align:center}
+.btn-pink{background:linear-gradient(135deg,#ff9a9e,#fad0c4);color:#fff}
+.btn-pink:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(255,154,158,0.3)}
+.btn-outline{background:#fff;border:2px solid #ff9a9e;color:#ff9a9e}
+.btn-outline:hover{background:#fff5f5}
+
+/* ═══════ BADGES ═══════ */
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.badge-item{text-align:center;padding:12px 6px;border-radius:12px;background:#f8f9fa;transition:0.2s}
+.badge-item .badge-icon{font-size:32px;display:block;margin-bottom:4px}
+.badge-item .badge-name{font-size:10px;font-weight:700;color:#666}
+.badge-item.locked{opacity:0.35;filter:grayscale(1)}
+.badge-item.unlocked{background:linear-gradient(135deg,#fff8e1,#fff3e0);border:1px solid #ffd54f}
+.badge-item.unlocked .badge-icon{animation:badgePop 0.5s}
+
+/* ═══════ MAP ═══════ */
+.map-container{position:relative;width:100%;height:180px;background:linear-gradient(180deg,#e8f5e9,#c8e6c9,#a5d6a7);border-radius:12px;overflow:hidden;margin-bottom:8px}
+.map-path{position:absolute;top:10%;left:5%;right:5%;height:80%}
+.map-dot{position:absolute;width:14px;height:14px;background:#ff9a9e;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.2);transition:0.3s}
+.map-dot.visited{background:#4caf50}
+.map-dot.current{background:#ff9800;animation:pulse 1s infinite;width:18px;height:18px;z-index:2}
+.map-label{position:absolute;font-size:8px;font-weight:700;color:#666;transform:translateX(-50%);white-space:nowrap}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+
+/* ═══════ CHART ═══════ */
+.chart-wrap{width:100%;height:200px;margin-bottom:8px}
+
+/* ═══════ CHALLENGE ═══════ */
+.challenge-item{display:flex;align-items:center;padding:12px;border-radius:12px;background:#f8f9fa;margin-bottom:8px;gap:10px}
+.challenge-item .ch-icon{font-size:28px}
+.challenge-item .ch-info{flex:1}
+.challenge-item .ch-info .ch-title{font-size:14px;font-weight:700;color:#333}
+.challenge-item .ch-info .ch-desc{font-size:11px;color:#999}
+.challenge-item .ch-status{font-size:20px}
+
+/* ═══════ NOTIFICATION ═══════ */
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:999;animation:toastIn 0.3s;max-width:90%;text-align:center}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* ═══════ CONFETTI ═══════ */
+.confetti-container{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden}
+.confetti{position:absolute;width:10px;height:10px;border-radius:2px;animation:confettiFall linear forwards}
+@keyframes confettiFall{0%{transform:translateY(-10px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+
+/* ═══════ MISC ═══════ */
+.shiba-msg{background:linear-gradient(135deg,#fff8e1,#fff3e0);border-radius:16px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px;border-left:4px solid #ff9800}
+.shiba-msg .shiba-icon{font-size:32px}
+.shiba-msg .msg-text{font-size:13px;color:#666;line-height:1.5}
+.week-select{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
+.week-select .ws-btn{padding:6px 14px;border-radius:20px;border:2px solid #eee;background:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:0.2s;color:#666}
+.week-select .ws-btn.active{background:#ff9a9e;border-color:#ff9a9e;color:#fff}
+.week-select .ws-btn.completed{border-color:#4caf50;color:#4caf50}
+.trend-up{color:#4caf50}
+.trend-down{color:#f44336}
+</style>
+</head>
+<body>
+
+<!-- ══════ AUTH SCREEN ══════ -->
+<div id="authScreen">
+  <div class="logo">🐕</div>
+  <h2>莊敬商科</h2>
+  <p>老師減肥大作戰 💪</p>
+  <div class="auth-card" id="loginForm">
+    <input id="loginName" placeholder="請輸入你的大名" autocomplete="off">
+    <button class="btn-primary" onclick="login()">🚀 進入戰場</button>
+    <div class="hint">還沒有資料？輸入名字就會自動註冊囉～</div>
+  </div>
+  <div class="auth-card hide" id="registerForm">
+    <div class="start-row">
+      <input id="regName" placeholder="你的大名" autocomplete="off">
+    </div>
+    <div class="start-row">
+      <input id="regStart" type="number" step="0.1" placeholder="起始體重 (kg)">
+      <input id="regTarget" type="number" step="0.1" placeholder="目標體重 (kg)">
+    </div>
+    <div class="start-row">
+      <input id="regHeight" type="number" placeholder="身高 (cm)">
+    </div>
+    <button class="btn-primary" onclick="register()">🎉 準備好了！開始減肥！</button>
+    <div class="hint" style="cursor:pointer;color:#ff9a9e" onclick="showLogin()">← 已有帳號？直接登入</div>
+  </div>
+</div>
+
+<!-- ══════ MAIN APP ══════ -->
+<div id="appMain" class="hide">
+
+  <!-- Top Bar -->
+  <div id="topBar">
+    <span class="logo">🐕</span>
+    <h1>莊敬減肥比賽</h1>
+    <span class="user-badge" id="userBadge">老師</span>
+  </div>
+
+  <!-- ══ Shiba Message ══ -->
+  <div id="shibaMsg" class="shiba-msg" style="margin:12px 16px 0">
+    <span class="shiba-icon">🐕</span>
+    <div class="msg-text" id="shibaText">汪！今天也要一起加油喔～</div>
+  </div>
+
+  <!-- ══ PAGES ══ -->
+
+  <!-- Dashboard -->
+  <div class="page active" id="pageDashboard">
+    <div class="page-title">📊 我的儀表板</div>
+    <div class="card">
+      <div class="card-title">⚖️ 體重概況</div>
+      <div class="stat-row">
+        <div class="stat-box"><span class="num" id="dStart">-</span><span class="label">起始體重</span></div>
+        <div class="stat-box"><span class="num" id="dCurrent">-</span><span class="label">目前體重</span></div>
+        <div class="stat-box"><span class="num" id="dTarget">-</span><span class="label">目標體重</span></div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-box"><span class="num" id="dLost">-</span><span class="label">已減重量</span></div>
+        <div class="stat-box"><span class="num" id="dPercent">-</span><span class="label">減重百分比</span></div>
+        <div class="stat-box"><span class="num" id="dRemain">-</span><span class="label">離目標還有</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📈 體重趨勢</div>
+      <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">👣 本週步數</div>
+      <div class="stat-row">
+        <div class="stat-box"><span class="num" id="dStepsToday">-</span><span class="label">今日</span></div>
+        <div class="stat-box"><span class="num" id="dStepsWeek">-</span><span class="label">本週平均</span></div>
+        <div class="stat-box"><span class="num" id="dStepsBest">-</span><span class="label">本週最高</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏅 徽章收集 <span id="badgeCount" style="font-size:12px;color:#999"></span></div>
+      <div class="badge-grid" id="miniBadges"></div>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="page" id="pageSteps">
+    <div class="page-title">👣 每日步數</div>
+    <div class="card">
+      <div class="shiba-msg" style="margin-bottom:12px">
+        <span class="shiba-icon">🐕</span>
+        <div class="msg-text">從手機的健康 App 看一下今天的步數，填進來吧！</div>
+      </div>
+      <div class="input-group">
+        <label>📅 日期</label>
+        <input type="date" id="stepDate">
+      </div>
+      <div class="input-group">
+        <label>👣 今日步數</label>
+        <input type="number" id="stepCount" placeholder="例如 8420" min="0">
+      </div>
+      <button class="btn btn-pink" onclick="saveSteps()">✅ 記錄步數</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 最近記錄</div>
+      <div id="recentSteps"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 本週步數圖</div>
+      <div class="chart-wrap"><canvas id="stepsChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Weight -->
+  <div class="page" id="pageWeight">
+    <div class="page-title">⚖️ 每週體重</div>
+    <div class="card">
+      <div class="shiba-msg" style="margin-bottom:12px">
+        <span class="shiba-icon">🐕</span>
+        <div class="msg-text">每週日量一次體重，誠實記錄才能看到進步喔！</div>
+      </div>
+      <div class="input-group">
+        <label>📅 週次</label>
+        <input type="week" id="weightWeek">
+      </div>
+      <div class="input-group">
+        <label>⚖️ 體重 (kg)</label>
+        <input type="number" id="weightVal" step="0.1" placeholder="例如 72.5" min="20" max="200">
+      </div>
+      <button class="btn btn-pink" onclick="saveWeight()">✅ 記錄體重</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 體重記錄</div>
+      <div id="weightHistory"></div>
+    </div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="page" id="pageRank">
+    <div class="page-title">🏆 每週排行榜</div>
+    <div class="week-select" id="rankWeekSelect"></div>
+    <div id="rankList"></div>
+  </div>
+
+  <!-- Map -->
+  <div class="page" id="pageMap">
+    <div class="page-title">🗺️ 環島步行地圖</div>
+    <div class="card">
+      <div class="card-title">📍 台北 → 高雄</div>
+      <div class="map-container">
+        <div class="map-path" id="mapPath"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#999">
+        <span>🚩 台北</span>
+        <span id="mapProgress">0%</span>
+        <span>🏁 高雄</span>
+      </div>
+      <div style="margin-top:8px;text-align:center;font-size:13px;color:#666" id="mapDetail">
+        🚶 還需要走 450,000 步才能到高雄！
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏅 步行成就</div>
+      <div id="walkAchievements"></div>
+    </div>
+  </div>
+
+  <!-- Badges -->
+  <div class="page" id="pageBadge">
+    <div class="page-title">🏅 成就徽章</div>
+    <div class="badge-grid" id="badgeGrid"></div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">📊 收集進度</div>
+      <div style="background:#f0f0f0;border-radius:10px;height:20px;overflow:hidden">
+        <div id="badgeProgress" style="height:100%;background:linear-gradient(90deg,#ff9a9e,#fad0c4);border-radius:10px;transition:0.5s;width:0%"></div>
+      </div>
+      <div style="text-align:center;font-size:12px;color:#999;margin-top:4px" id="badgeProgressText">0 / 0</div>
+    </div>
+  </div>
+
+  <!-- Challenges -->
+  <div class="page" id="pageChallenge">
+    <div class="page-title">🔥 每週挑戰</div>
+    <div id="challengeList"></div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">📋 挑戰積分</div>
+      <div style="text-align:center;padding:12px">
+        <span style="font-size:36px;font-weight:900;color:#ff9a9e" id="challengeScore">0</span>
+        <span style="font-size:14px;color:#999"> 分</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ Bottom Nav ══ -->
+<div id="bottomNav" class="hide">
+  <div class="nav-item active" data-page="pageDashboard" onclick="switchPage('pageDashboard')">
+    <span class="nav-icon">📊</span>儀表板
+  </div>
+  <div class="nav-item" data-page="pageSteps" onclick="switchPage('pageSteps')">
+    <span class="nav-icon">👣</span>步數
+  </div>
+  <div class="nav-item" data-page="pageWeight" onclick="switchPage('pageWeight')">
+    <span class="nav-icon">⚖️</span>體重
+  </div>
+  <div class="nav-item" data-page="pageRank" onclick="switchPage('pageRank')">
+    <span class="nav-icon">🏆</span>排行
+  </div>
+  <div class="nav-item" data-page="pageMap" onclick="switchPage('pageMap')">
+    <span class="nav-icon">🗺️</span>環島
+  </div>
+  <div class="nav-item" data-page="pageBadge" onclick="switchPage('pageBadge')">
+    <span class="nav-icon">🏅</span>成就
+  </div>
+  <div class="nav-item" data-page="pageChallenge" onclick="switchPage('pageChallenge')">
+    <span class="nav-icon">🔥</span>挑戰
+  </div>
+</div>
+
+<script>
+// ═══════════ CONFIG ═══════════
+const API = '/wl/api';
+const WEEKDAYS = ['日','一','二','三','四','五','六'];
+const CITIES = [
+  {name:'台北', step:0},{name:'桃園', step:40000},{name:'新竹', step:80000},
+  {name:'苗栗', step:120000},{name:'台中', step:170000},{name:'彰化', step:210000},
+  {name:'雲林', step:250000},{name:'嘉義', step:290000},{name:'台南', step:340000},
+  {name:'高雄', step:450000}
+];
+const TOTAL_MAP_STEPS = 450000;
+
+const ALL_BADGES = [
+  {id:'first_step', name:'第一步', icon:'🐾', desc:'第一次記錄體重'},
+  {id:'walker_d7', name:'步行達人', icon:'🚶', desc:'連續7天步數>8000'},
+  {id:'sprinter', name:'暴走族', icon:'🏃', desc:'單日步數>20000'},
+  {id:'newbie', name:'減重新人', icon:'📉', desc:'第一週減重>1kg'},
+  {id:'streak4', name:'毅力獎', icon:'💪', desc:'連續4週記錄體重'},
+  {id:'wk_champ', name:'週冠軍', icon:'👑', desc:'拿過一次週排名第一'},
+  {id:'improver', name:'最佳進步', icon:'⚡', desc:'本週比上週多減0.5kg'},
+  {id:'goal', name:'達標者', icon:'🎯', desc:'達到目標體重'},
+  {id:'burn100k', name:'燃燒吧', icon:'🔥', desc:'單週步數>100,000'},
+  {id:'ninja', name:'隱藏王', icon:'🥷', desc:'連續兩週冠軍'},
+  {id:'shiba30', name:'阿柴加持', icon:'🐕', desc:'使用超過30天'},
+  {id:'halfway', name:'半途勇士', icon:'⛰️', desc:'走到台中（環島半程）'},
+];
+
+const CHALLENGES = [
+  {id:'c1', title:'🚶 步數王者', desc:'誰單日步數最高', icon:'👑'},
+  {id:'c2', title:'📉 減重達人', desc:'誰減重百分比最高', icon:'⚡'},
+  {id:'c3', title:'📝 全勤獎', desc:'誰連續7天都有記錄', icon:'📋'},
+  {id:'c4', title:'👥 團體戰', desc:'全體總步數大挑戰', icon:'🤼'},
+];
+
+const MOTIVATIONS = [
+  '汪！今天也要一起加油喔～',
+  '瘦一點，健康多一點！🐕',
+  '每天多走1000步，一年瘦5公斤！',
+  '減肥不是為了別人，是為了更好的自己 💪',
+  '小柴子陪你一起變健康！',
+  '羅馬不是一天造成的，肥肉也是…慢慢來！😂',
+  '今天走了幾步？快來記錄吧～',
+  '管住嘴、邁開腿，明天更美好！',
+  '每減一公斤，都是對自己的承諾 ✨',
+  '吃飽了才有力氣減肥！汪！',
+];
+
+// ═══════════ STATE ═══════════
+let currentUser = null;
+let users = [];
+let stepsData = {};
+let weightsData = {};
+let badgesData = {};
+let challengeData = {};
+let weightChart = null;
+let stepsChart = null;
+
+// ═══════════ API ═══════════
+async function api(path, data) {
+  const opt = {headers:{'Content-Type':'application/json'}};
+  if(data) opt.method='POST', opt.body=JSON.stringify(data);
+  const r = await fetch(API+path, opt);
+  return r.json();
+}
+
+// ═══════════ AUTH ═══════════
+async function login() {
+  const name = document.getElementById('loginName').value.trim();
+  if(!name) return toast('請輸入名字～');
+  const res = await api('/login', {name});
+  if(res.ok) {
+    currentUser = res.user;
+    document.getElementById('loginName').value = '';
+    enterApp();
+  } else if(res.newUser) {
+    document.getElementById('regName').value = name;
+    document.getElementById('loginForm').classList.add('hide');
+    document.getElementById('registerForm').classList.remove('hide');
+  } else {
+    toast(res.error || '登入失敗');
+  }
+}
+
+function showLogin() {
+  document.getElementById('registerForm').classList.add('hide');
+  document.getElementById('loginForm').classList.remove('hide');
+}
+
+async function register() {
+  const name = document.getElementById('regName').value.trim();
+  const start = parseFloat(document.getElementById('regStart').value);
+  const target = parseFloat(document.getElementById('regTarget').value);
+  const height = parseInt(document.getElementById('regHeight').value) || 0;
+  if(!name||!start||!target) return toast('請填寫完整資料～');
+  const res = await api('/register', {name,start_weight:start,target_weight:target,height});
+  if(res.ok) {
+    currentUser = res.user;
+    enterApp();
+  } else {
+    toast(res.error || '註冊失敗');
+  }
+}
+
+function enterApp() {
+  document.getElementById('authScreen').classList.add('hide');
+  document.getElementById('appMain').classList.remove('hide');
+  document.getElementById('bottomNav').classList.remove('hide');
+  document.getElementById('userBadge').textContent = currentUser.name;
+  loadAll();
+}
+
+// ═══════════ LOAD DATA ═══════════
+async function loadAll() {
+  const [uRes, sRes, wRes, bRes, cRes, lRes] = await Promise.all([
+    api('/users'),
+    api('/steps/'+currentUser.id),
+    api('/weights/'+currentUser.id),
+    api('/badges/'+currentUser.id),
+    api('/challenges/'+currentUser.id),
+    api('/leaderboard')
+  ]);
+  if(uRes.ok) users = uRes.users;
+  if(sRes.ok) stepsData = sRes.steps||{};
+  if(wRes.ok) weightsData = wRes.weights||{};
+  if(bRes.ok) badgesData = bRes.badges||{};
+  if(cRes.ok) challengeData = cRes;
+  if(lRes.ok) window._leaderboard = lRes.ranking||[];
+  
+  setShibaMsg();
+  updateDashboard();
+  updateStepsPage();
+  updateWeightPage();
+  updateLeaderboard();
+  updateMap();
+  updateBadges();
+  updateChallenges();
+}
+
+function setShibaMsg() {
+  const msgs = MOTIVATIONS;
+  const idx = Math.floor(Math.random() * msgs.length);
+  document.getElementById('shibaText').textContent = msgs[idx];
+}
+
+// ═══════════ PAGES ═══════════
+function switchPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.page===id));
+  if(id==='pageDashboard') updateDashboard();
+  if(id==='pageSteps') updateStepsPage();
+  if(id==='pageWeight') updateWeightPage();
+  if(id==='pageRank') updateLeaderboard();
+  if(id==='pageMap') updateMap();
+  if(id==='pageBadge') updateBadges();
+  if(id==='pageChallenge') updateChallenges();
+}
+
+// ═══════════ DASHBOARD ═══════════
+function updateDashboard() {
+  if(!currentUser) return;
+  const u = users.find(x=>x.id===currentUser.id) || currentUser;
+  const ws = Object.values(weightsData).filter(v=>v>0).sort();
+  const startW = u.start_weight;
+  const curW = ws.length>0 ? ws[ws.length-1] : startW;
+  const targetW = u.target_weight;
+  const lost = startW - curW;
+  const pct = startW>0 ? (lost/startW*100) : 0;
+  const remain = curW - targetW;
+  
+  document.getElementById('dStart').textContent = startW+'kg';
+  document.getElementById('dCurrent').textContent = curW.toFixed(1)+'kg';
+  document.getElementById('dTarget').textContent = targetW+'kg';
+  document.getElementById('dLost').textContent = (lost>0?'-':'')+lost.toFixed(1)+'kg';
+  document.getElementById('dLost').style.color = lost>0?'#4caf50':'#666';
+  document.getElementById('dPercent').textContent = (lost>0?'':'')+pct.toFixed(1)+'%';
+  document.getElementById('dPercent').style.color = lost>0?'#4caf50':'#666';
+  document.getElementById('dRemain').textContent = remain>0 ? remain.toFixed(1)+'kg' : '🎉 已達成！';
+  document.getElementById('dRemain').style.color = remain>0?'#f44336':'#ff9800';
+  
+  // Steps
+  const today = todayStr();
+  const weekSteps = getWeekSteps();
+  const todayS = stepsData[today]||0;
+  const weekAvg = weekSteps.length>0 ? Math.round(weekSteps.reduce((a,b)=>a+b,0)/weekSteps.length) : 0;
+  const weekMax = weekSteps.length>0 ? Math.max(...weekSteps) : 0;
+  document.getElementById('dStepsToday').textContent = todayS.toLocaleString();
+  document.getElementById('dStepsWeek').textContent = weekAvg.toLocaleString();
+  document.getElementById('dStepsBest').textContent = weekMax.toLocaleString();
+
+  // Mini badges
+  const earned = Object.keys(badgesData).filter(k=>badgesData[k]);
+  document.getElementById('badgeCount').textContent = `(${earned.length}/${ALL_BADGES.length})`;
+  const grid = document.getElementById('miniBadges');
+  grid.innerHTML = ALL_BADGES.slice(0,6).map(b => {
+    const got = earned.includes(b.id);
+    return `<div class="badge-item ${got?'unlocked':'locked'}">
+      <span class="badge-icon">${got?b.icon:'🔒'}</span>
+      <div class="badge-name">${got?b.name:'???'}</div>
+    </div>`;
+  }).join('');
+
+  // Weight chart
+  drawWeightChart();
+}
+
+function drawWeightChart() {
+  if(!currentUser) return;
+  const u = users.find(x=>x.id===currentUser.id) || currentUser;
+  const entries = Object.entries(weightsData).filter(([k,v])=>v>0).sort((a,b)=>a[0].localeCompare(b[0]));
+  if(entries.length<1) return;
+  const labels = entries.map(([k])=>{
+    const d = new Date(k+'T00:00:00');
+    return (d.getMonth()+1)+'/'+d.getDate();
+  });
+  const vals = entries.map(([,v])=>v);
+  const startW = u.start_weight;
+  const targetW = u.target_weight;
+  const allVals = [startW, ...vals];
+  const allLabels = ['開始', ...labels];
+
+  const ctx = document.getElementById('weightChart').getContext('2d');
+  if(weightChart) weightChart.destroy();
+  weightChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: allLabels,
+      datasets: [
+        {label:'體重', data:allVals, borderColor:'#ff9a9e', backgroundColor:'rgba(255,154,158,0.1)', fill:true, tension:0.3, pointRadius:4, pointBackgroundColor:'#ff9a9e'},
+        {label:'目標', data:Array(allLabels.length).fill(targetW), borderColor:'#4caf50', borderDash:[5,5], pointRadius:0, borderWidth:2}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{grid:{color:'rgba(0,0,0,0.05)'}, ticks:{font:{size:10}}},
+        x:{grid:{display:false}, ticks:{font:{size:10}}}
+      }
+    }
+  });
+}
+
+// ═══════════ STEPS ═══════════
+function updateStepsPage() {
+  const today = todayStr();
+  document.getElementById('stepDate').value = today;
+  document.getElementById('stepCount').value = '';
+  renderRecentSteps();
+  drawStepsChart();
+}
+
+function renderRecentSteps() {
+  const entries = Object.entries(stepsData).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,7);
+  const html = entries.length===0
+    ? '<div style="text-align:center;padding:12px;color:#999">還沒有步數記錄～</div>'
+    : entries.map(([date,val])=>{
+      const d = new Date(date+'T00:00:00');
+      const label = (d.getMonth()+1)+'/'+d.getDate()+' ('+WEEKDAYS[d.getDay()]+')';
+      const barW = Math.min(100, val/200);
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13px">
+        <span style="width:70px;color:#999">${label}</span>
+        <div style="flex:1;height:16px;background:#f0f0f0;border-radius:8px;overflow:hidden">
+          <div style="width:${barW}%;height:100%;background:linear-gradient(90deg,#ff9a9e,#fad0c4);border-radius:8px"></div>
+        </div>
+        <span style="width:60px;text-align:right;font-weight:700;color:#666">${val.toLocaleString()}</span>
+      </div>`;
+    }).join('');
+  document.getElementById('recentSteps').innerHTML = html;
+}
+
+function drawStepsChart() {
+  const entries = Object.entries(stepsData).sort((a,b)=>a[0].localeCompare(b[0])).slice(-14);
+  if(entries.length<1) return;
+  const labels = entries.map(([k])=>{
+    const d = new Date(k+'T00:00:00');
+    return (d.getMonth()+1)+'/'+d.getDate();
+  });
+  const vals = entries.map(([,v])=>v);
+  const ctx = document.getElementById('stepsChart').getContext('2d');
+  if(stepsChart) stepsChart.destroy();
+  stepsChart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{label:'步數', data:vals, backgroundColor:'rgba(255,154,158,0.6)', borderRadius:4, borderSkipped:false}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{grid:{color:'rgba(0,0,0,0.05)'}, ticks:{font:{size:10}}},
+        x:{grid:{display:false}, ticks:{font:{size:9}}}
+      }
+    }
+  });
+}
+
+async function saveSteps() {
+  const date = document.getElementById('stepDate').value;
+  const val = parseInt(document.getElementById('stepCount').value);
+  if(!date||!val||val<0) return toast('請輸入有效的步數～');
+  const res = await api('/steps', {user_id:currentUser.id, date, steps:val});
+  if(res.ok) {
+    stepsData = res.steps||{};
+    toast('✅ 步數已記錄！ ('+val.toLocaleString()+' 步)');
+    updateStepsPage();
+    updateDashboard();
+    // Check badge
+    checkBadges();
+  } else {
+    toast(res.error || '記錄失敗');
+  }
+}
+
+function getWeekSteps() {
+  const today = new Date();
+  const start = new Date(today); start.setDate(start.getDate()-start.getDay());
+  const result = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(start); d.setDate(d.getDate()+i);
+    const key = d.toISOString().slice(0,10);
+    if(stepsData[key]) result.push(stepsData[key]);
+  }
+  return result;
+}
+
+// ═══════════ WEIGHT ═══════════
+function updateWeightPage() {
+  const now = new Date();
+  const weekNum = getWeekNumber(now);
+  document.getElementById('weightWeek').value = now.getFullYear() + '-W' + String(weekNum).padStart(2,'0');
+  document.getElementById('weightVal').value = '';
+  renderWeightHistory();
+}
+
+function renderWeightHistory() {
+  const entries = Object.entries(weightsData).filter(([k,v])=>v>0).sort((a,b)=>b[0].localeCompare(a[0]));
+  const html = entries.length===0
+    ? '<div style="text-align:center;padding:12px;color:#999">還沒有體重記錄～</div>'
+    : entries.map(([week,v])=>{
+      const [y,w] = week.split('-W');
+      return `<div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:14px">
+        <span style="flex:1;color:#999">${y} 第${w}週</span>
+        <span style="font-weight:800;color:#333">${v.toFixed(1)} kg</span>
+      </div>`;
+    }).join('');
+  document.getElementById('weightHistory').innerHTML = html;
+}
+
+async function saveWeight() {
+  const week = document.getElementById('weightWeek').value;
+  const val = parseFloat(document.getElementById('weightVal').value);
+  if(!week||!val||val<20||val>200) return toast('請輸入有效的體重～');
+  const res = await api('/weight', {user_id:currentUser.id, week, weight:val});
+  if(res.ok) {
+    weightsData = res.weights||{};
+    toast('✅ 體重已記錄！ ('+val.toFixed(1)+' kg)');
+    updateWeightPage();
+    updateDashboard();
+    checkBadges();
+    if(res.newBadge) showConfetti();
+  } else {
+    toast(res.error || '記錄失敗');
+  }
+}
+
+// ═══════════ LEADERBOARD ═══════════
+function updateLeaderboard() {
+  const now = new Date();
+  const curWeek = getWeekNumber(now);
+  const year = now.getFullYear();
+  
+  // Week selector
+  const sel = document.getElementById('rankWeekSelect');
+  sel.innerHTML = '';
+  for(let i=0;i<8;i++){
+    const w = curWeek - i;
+    if(w<1) continue;
+    const btn = document.createElement('span');
+    btn.className = 'ws-btn'+(i===0?' active':'');
+    btn.textContent = year+' 第'+w+'週';
+    btn.dataset.week = year+'-W'+String(w).padStart(2,'0');
+    btn.onclick = ()=>renderRanking(btn.dataset.week, sel);
+    sel.appendChild(btn);
+  }
+  
+  // Render current week
+  renderRanking(year+'-W'+String(curWeek).padStart(2,'0'), sel);
+}
+
+async function renderRanking(weekKey, sel) {
+  document.querySelectorAll('.ws-btn').forEach(b=>b.classList.toggle('active',b.dataset.week===weekKey));
+  const res = await api('/leaderboard?week='+weekKey);
+  if(!res.ok) return;
+  const rank = res.ranking||[];
+  const container = document.getElementById('rankList');
+  if(rank.length===0){
+    container.innerHTML = '<div style="text-align:center;padding:24px;color:#999">這週還沒有資料～</div>';
+    return;
+  }
+  container.innerHTML = rank.map((r,i)=>{
+    const cls = i===0?'top1':i===1?'top2':i===2?'top3':'';
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    const lostStr = r.lost>0 ? '-'+r.lost.toFixed(1)+'kg' : '0kg';
+    return `<div class="rank-item ${cls}">
+      <div class="rank-num">${medal}</div>
+      <div class="rank-name">${r.name}</div>
+      <div class="rank-data">
+        <div class="val">${lostStr}</div>
+        <div>${r.percent.toFixed(1)}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════ MAP ═══════════
+function updateMap() {
+  const total = Object.values(stepsData).reduce((a,b)=>a+b,0);
+  const pct = Math.min(100, total/TOTAL_MAP_STEPS*100);
+  document.getElementById('mapProgress').textContent = Math.round(pct)+'%';
+  
+  let currentCity = CITIES[0];
+  let nextCity = CITIES[1];
+  for(let i=0;i<CITIES.length;i++){
+    if(total >= CITIES[i].step){
+      currentCity = CITIES[i];
+      nextCity = CITIES[i+1] || CITIES[i];
+    }
+  }
+  
+  const remain = Math.max(0, TOTAL_MAP_STEPS - total);
+  document.getElementById('mapDetail').textContent = 
+    remain > 0 
+      ? `📍 目前在 ${currentCity.name}，還需要 ${remain.toLocaleString()} 步才能到高雄！`
+      : '🎉 已經到高雄了！可以挑戰第二圈～';
+  
+  // Draw map dots
+  const mapEl = document.getElementById('mapPath');
+  mapEl.innerHTML = CITIES.map((city,i)=>{
+    const x = 5 + (i/(CITIES.length-1))*90;
+    const y = 80 - Math.sin(i/CITIES.length*Math.PI)*60;
+    const reached = total >= city.step;
+    const isCurrent = city===currentCity && !reached;
+    const isVisited = total >= city.step;
+    return `<div class="map-dot ${isVisited?'visited':''} ${isCurrent?'current':''}" 
+      style="left:${x}%;top:${y}%"></div>
+      <div class="map-label" style="left:${x}%;top:${y+12}%">${city.name}</div>`;
+  }).join('');
+  
+  // Check halfway badge
+  if(total >= CITIES[4].step) {
+    earnBadge('halfway');
+  }
+  
+  // Check walking badges
+  if(total >= 20000) earnBadge('sprinter');
+}
+
+// ═══════════ BADGES ═══════════
+function updateBadges() {
+  const earned = Object.keys(badgesData).filter(k=>badgesData[k]);
+  const grid = document.getElementById('badgeGrid');
+  grid.innerHTML = ALL_BADGES.map(b => {
+    const got = earned.includes(b.id);
+    return `<div class="badge-item ${got?'unlocked':'locked'}">
+      <span class="badge-icon">${got?b.icon:'🔒'}</span>
+      <div class="badge-name">${got?b.name:'???'}</div>
+      <div style="font-size:9px;color:#999;margin-top:2px">${got?b.desc:'尚未解鎖'}</div>
+    </div>`;
+  }).join('');
+  
+  const pct = ALL_BADGES.length>0 ? Math.round(earned.length/ALL_BADGES.length*100) : 0;
+  document.getElementById('badgeProgress').style.width = pct+'%';
+  document.getElementById('badgeProgressText').textContent = earned.length+' / '+ALL_BADGES.length;
+}
+
+async function checkBadges() {
+  if(!currentUser) return;
+  const res = await api('/check-badges', {user_id:currentUser.id});
+  if(res.ok && res.newBadge) {
+    showConfetti();
+    toast('🎉 解鎖新徽章：'+res.badgeName+'！');
+    // Reload badges
+    const bRes = await api('/badges/'+currentUser.id);
+    if(bRes.ok) badgesData = bRes.badges||{};
+    updateBadges();
+    updateDashboard();
+  }
+}
+
+async function earnBadge(badgeId) {
+  if(!currentUser) return;
+  if(badgesData[badgeId]) return;
+  const res = await api('/earn-badge', {user_id:currentUser.id, badge_id:badgeId});
+  if(res.ok && res.new) {
+    const badge = ALL_BADGES.find(b=>b.id===badgeId);
+    badgesData[badgeId] = true;
+    toast('🎉 解鎖徽章：'+(badge?badge.name:badgeId)+'！');
+    showConfetti();
+    updateBadges();
+    updateDashboard();
+  }
+}
+
+// ═══════════ CHALLENGES ═══════════
+function updateChallenges() {
+  const container = document.getElementById('challengeList');
+  container.innerHTML = CHALLENGES.map(c => {
+    const done = challengeData.completed && challengeData.completed.includes(c.id);
+    return `<div class="challenge-item">
+      <div class="ch-icon">${c.icon}</div>
+      <div class="ch-info">
+        <div class="ch-title">${c.title}</div>
+        <div class="ch-desc">${c.desc}</div>
+      </div>
+      <div class="ch-status">${done?'✅':'⏳'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('challengeScore').textContent = challengeData.score||0;
+}
+
+// ═══════════ UTILITY ═══════════
+function todayStr() {
+  return new Date().toISOString().slice(0,10);
+}
+
+function getWeekNumber(d) {
+  const start = new Date(d.getFullYear(), 0, 1);
+  const diff = (d - start + (start.getTimezoneOffset() - d.getTimezoneOffset()) * 60000) / 86400000;
+  return Math.ceil((diff + start.getDay() + 1) / 7);
+}
+
+function toast(msg) {
+  const existing = document.querySelector('.toast');
+  if(existing) existing.remove();
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 2500);
+}
+
+function showConfetti() {
+  const container = document.createElement('div');
+  container.className = 'confetti-container';
+  const colors = ['#ff9a9e','#fad0c4','#ffd54f','#4caf50','#64b5f6','#ce93d8','#ff8a65'];
+  for(let i=0;i<40;i++){
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.left = Math.random()*100+'%';
+    el.style.background = colors[Math.floor(Math.random()*colors.length)];
+    el.style.width = (6+Math.random()*8)+'px';
+    el.style.height = (6+Math.random()*8)+'px';
+    el.style.borderRadius = Math.random()>0.5?'50%':'2px';
+    el.style.animationDuration = (2+Math.random()*2)+'s';
+    el.style.animationDelay = Math.random()*0.5+'s';
+    container.appendChild(el);
+  }
+  document.body.appendChild(container);
+  setTimeout(()=>container.remove(), 4000);
+}
+
+// ═══════════ INIT ═══════════
+console.log('🐕 莊敬商科減肥比賽 App 載入完成！');
+</script>
+</body>
+</html>
