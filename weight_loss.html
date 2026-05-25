@@ -472,6 +472,10 @@ function init() {
   
   // Spawn floating animals
   spawnFloatingAnimals();
+  // 登入頁面的 emoji 也要轉 SVG
+  if (typeof twemoji !== 'undefined') {
+    setTimeout(() => twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' }), 100);
+  }
 }
 init();
 
