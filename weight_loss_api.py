@@ -128,8 +128,73 @@ def _init_pg_tables():
             );
         """)
         cur.close()
+
+        # 自動遷移 JSON 舊資料到 PostgreSQL
+        _migrate_json_to_pg(conn)
     except Exception as e:
         print(f'⚠️ PostgreSQL init error: {e}')
+
+
+def _migrate_json_to_pg(conn):
+    """將 JSON 檔案中的舊使用者資料搬到 PostgreSQL"""
+    if not os.path.exists(WL_FILE):
+        return
+    try:
+        with open(WL_FILE, 'r', encoding='utf-8') as f:
+            jd = json.load(f)
+    except Exception:
+        return
+    if not jd.get('users'):
+        return
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM wl_users")
+        existing = {r[0] for r in cur.fetchall()}
+        cur.execute("SELECT COALESCE(MAX(id),0) FROM wl_users")
+        max_id = cur.fetchone()[0]
+        migrated = 0
+        for u in jd['users']:
+            if u['name'] in existing:
+                cur.execute("SELECT id FROM wl_users WHERE name=%s", (u['name'],))
+                row = cur.fetchone()
+                u['new_id'] = row[0] if row else u['id']
+                continue
+            max_id += 1
+            pw = u.get('password', '')
+            cur.execute(
+                "INSERT INTO wl_users (id, name, animal, start_weight, target_weight, height, password, created) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+                (max_id, u['name'], u.get('animal','🐕'), u.get('start_weight',0), u.get('target_weight',0), u.get('height',0), pw, u.get('created',''))
+            )
+            u['new_id'] = max_id
+            existing.add(u['name'])
+            migrated += 1
+        if migrated == 0:
+            cur.close()
+            return
+        for uid_str, steps in jd.get('steps', {}).items():
+            old_uid = int(uid_str)
+            nuid = next((u['new_id'] for u in jd['users'] if u['id'] == old_uid), None)
+            if nuid:
+                for date, val in steps.items():
+                    cur.execute("INSERT INTO wl_steps (user_id, date, value) VALUES (%s,%s,%s) ON CONFLICT (user_id, date) DO NOTHING", (nuid, date, val))
+        for uid_str, weights in jd.get('weights', {}).items():
+            old_uid = int(uid_str)
+            nuid = next((u['new_id'] for u in jd['users'] if u['id'] == old_uid), None)
+            if nuid:
+                for week, val in weights.items():
+                    cur.execute("INSERT INTO wl_weights (user_id, week, value) VALUES (%s,%s,%s) ON CONFLICT (user_id, week) DO NOTHING", (nuid, week, val))
+        for uid_str, badges in jd.get('badges', {}).items():
+            old_uid = int(uid_str)
+            nuid = next((u['new_id'] for u in jd['users'] if u['id'] == old_uid), None)
+            if nuid:
+                for bid in badges:
+                    if badges[bid]:
+                        cur.execute("INSERT INTO wl_badges (user_id, badge_id) VALUES (%s,%s) ON CONFLICT (user_id, badge_id) DO NOTHING", (nuid, bid))
+        conn.commit()
+        cur.close()
+        print(f'✅ JSON→PG 遷移完成: {migrated} 位使用者')
+    except Exception as e:
+        print(f'⚠️ 遷移錯誤: {e}')
 
 # ═══════════════ DATA HELPERS (PostgreSQL優先, JSON備援) ═══════════════
 
