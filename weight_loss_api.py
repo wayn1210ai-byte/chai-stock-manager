@@ -459,7 +459,61 @@ def api_earn_badge():
     _save_badge(uid, badge_id)
     return jsonify({'ok':True, 'badges':_load_badges(uid)})
 
-# ═══════════════ RANKINGS ═══════════════
+# ═══════════════ LEADERBOARD ═══════════════
+
+@wl.route('/api/leaderboard')
+def api_leaderboard():
+    """Frontend calls /api/leaderboard and /api/leaderboard?week=YYYY-Www"""
+    users = _load_users()
+    week = request.args.get('week', '')
+    rankings = []
+    for u in users:
+        uid = str(u['id'])
+        ws = _load_weights(uid)
+        sw = u['start_weight']
+        if week:
+            # 只看該週的體重
+            cw = ws.get(week, sw) if ws.get(week, 0) > 0 else sw
+        else:
+            vals = [ws[k] for k in sorted(ws.keys()) if ws[k] > 0]
+            cw = vals[-1] if vals else sw
+        lost = sw - cw
+        pct = (lost/sw*100) if sw > 0 else 0
+        steps = _load_steps(uid)
+        total_steps = sum(steps.values())
+        rankings.append({
+            'id': u['id'],
+            'name': u['name'],
+            'animal': u['animal'],
+            'start_weight': sw,
+            'current_weight': round(cw,1),
+            'lost': round(lost,1),
+            'percent': round(pct,1),
+            'total_steps': total_steps,
+        })
+    rankings.sort(key=lambda r: r['percent'], reverse=True)
+    return jsonify({'ok':True, 'ranking':rankings})
+
+@wl.route('/api/challenges/<uid>')
+def api_challenges(uid):
+    return jsonify({'ok':True, 'completed':[], 'score':0})
+
+@wl.route('/api/check-badges', methods=['POST'])
+def api_check_badges():
+    j = request.json
+    uid = str(j.get('user_id'))
+    badges = _load_badges(uid)
+    new_badge = False
+    badge_name = ''
+    return jsonify({'ok':True, 'newBadge':new_badge, 'badgeName':badge_name})
+
+@wl.route('/api/earn-badge', methods=['POST'])
+def api_earn_badge_v2():
+    j = request.json
+    uid = str(j.get('user_id'))
+    badge_id = j.get('badge_id', '')
+    _save_badge(uid, badge_id)
+    return jsonify({'ok':True, 'new':True, 'badges':_load_badges(uid)})
 
 @wl.route('/api/rankings')
 def api_rankings():

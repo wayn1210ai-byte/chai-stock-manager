@@ -622,8 +622,13 @@ function selectAnimal(emoji) {
 async function api(path, data) {
   const opt = {headers:{'Content-Type':'application/json'}};
   if(data) opt.method='POST', opt.body=JSON.stringify(data);
-  const r = await fetch(API+path, opt);
-  return r.json();
+  try {
+    const r = await fetch(API+path, opt);
+    const text = await r.text();
+    try { return JSON.parse(text); } catch(e) { return {ok:false, error:'回應格式錯誤'}; }
+  } catch(e) {
+    return {ok:false, error:'網路錯誤'};
+  }
 }
 
 function getAnimalInfo(emoji) {
