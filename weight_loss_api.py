@@ -21,7 +21,7 @@ def _fix_db_url(url):
         return m.group(1) + m.group(2) + '.render.com' + m.group(3)
     return url
 
-DB_URL = _fix_db_url(DATABASE_URL)
+DB_URL = DATABASE_URL
 _use_pg = bool(DB_URL)
 _pg_conn = None
 
@@ -38,7 +38,8 @@ def _get_pg():
             _pg_conn.autocommit = True
             _init_pg_tables()
         return _pg_conn
-    except Exception:
+    except Exception as e:
+        print(f'⚠️ WL PostgreSQL connect error: {e}')
         return None
 
 def _init_pg_tables():
