@@ -558,7 +558,7 @@ function enterApp() {
   applyUserAnimal();
   loadAll();
   // Twemoji
-  if (typeof twemoji !== 'undefined') twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' });
+  if (typeof twemoji !== 'undefined') twemoji.parse(document.body, { folder: 'svg', ext: '.svg' });
 }
 
 function applyUserAnimal() {
@@ -599,7 +599,7 @@ async function loadAll() {
   updateChallenges();
   // Twemoji: 把所有 emoji 換成可愛 SVG 圖片
   if (typeof twemoji !== 'undefined') {
-    twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' });
+    twemoji.parse(document.body, { folder: 'svg', ext: '.svg' });
   }
 }
 
@@ -627,7 +627,7 @@ function switchPage(id) {
   if(id==='pageMap') updateMap();
   if(id==='pageBadge') updateBadges();
   if(id==='pageChallenge') updateChallenges();
-  if (typeof twemoji !== 'undefined') twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' });
+  if (typeof twemoji !== 'undefined') twemoji.parse(document.body, { folder: 'svg', ext: '.svg' });
 }
 
 // ═══════════ DASHBOARD ═══════════
@@ -786,7 +786,7 @@ async function saveSteps() {
     updateStepsPage();
     updateDashboard();
     checkBadges();
-    if (typeof twemoji !== 'undefined') twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' });
+    if (typeof twemoji !== 'undefined') twemoji.parse(document.body, { folder: 'svg', ext: '.svg' });
   } else {
     toast(res.error || '記錄失敗');
   }
@@ -838,7 +838,7 @@ async function saveWeight() {
     updateWeightPage();
     updateDashboard();
     checkBadges();
-    if (typeof twemoji !== 'undefined') twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' });
+    if (typeof twemoji !== 'undefined') twemoji.parse(document.body, { folder: 'svg', ext: '.svg' });
     if(res.newBadge) showConfetti();
   } else {
     toast(res.error || '記錄失敗');
@@ -1035,7 +1035,7 @@ console.log('🐾 莊敬動物園減肥大賽 App 載入完成！');
 // 最後一次轉換 emoji 到 SVG
 if (typeof twemoji !== 'undefined') {
   (function retryTwemoji(maxTries) {
-    twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' });
+    twemoji.parse(document.body, { folder: 'svg', ext: '.svg' });
     if (document.querySelectorAll('img.emoji, img[src*="twemoji"]').length === 0 && maxTries > 0) {
       setTimeout(function() { retryTwemoji(maxTries - 1); }, 200);
     }
