@@ -104,14 +104,11 @@ body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient
 .badge-item.unlocked .badge-icon{animation:badgePop 0.5s}
 @keyframes badgePop{0%{transform:scale(0)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
 
+/* ═══════ TWEMOJI SIZE FIX ═══════ */
+img.emoji{height:1.2em;width:1.2em;min-width:16px;min-height:16px;max-width:36px;max-height:36px;vertical-align:middle;display:inline-block;margin:0!important;padding:0!important}
+
 /* ═══════ MAP ═══════ */
-.map-container{position:relative;width:100%;height:170px;background:linear-gradient(180deg,#c8e6c9,#a5d6a7,#81c784);border-radius:12px;overflow:hidden;margin-bottom:6px;border:2px solid #e8f5e9}
-.map-path{position:absolute;top:5%;left:3%;right:3%;height:90%}
-.map-dot{position:absolute;width:12px;height:12px;background:#66bb6a;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.2);transition:0.3s}
-.map-dot.visited{background:#43a047}
-.map-dot.current{background:#ff9800;animation:pulse 1s infinite;width:16px;height:16px;z-index:2}
-.map-label{position:absolute;font-size:7px;font-weight:700;color:#2e7d32;transform:translateX(-50%);white-space:nowrap;text-shadow:0 0 4px #fff}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+.map-container{position:relative;width:100%;height:200px;background:linear-gradient(180deg,#e8f5e9,#fff);border-radius:12px;overflow:hidden;margin-bottom:6px;border:2px solid #e8f5e9}
 
 /* ═══════ CHART ═══════ */
 .chart-wrap{width:100%;height:180px;margin-bottom:6px}
@@ -310,12 +307,53 @@ body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient
     <div class="card">
       <div class="card-title">📍 動物大遷徙：台北 → 高雄</div>
       <div class="map-container">
-        <div class="map-path" id="mapPath"></div>
+        <svg viewBox="0 0 200 280" style="width:100%;height:100%;position:absolute;top:0;left:0" xmlns="http://www.w3.org/2000/svg">
+          <!-- 台灣島嶼輪廓（簡化版） -->
+          <path d="M105,15 C90,16 78,22 70,32 C62,42 56,55 52,68 C48,80 44,92 42,105
+                   C40,118 39,130 40,142 C41,154 43,166 46,178
+                   C48,186 50,194 54,202 C58,210 64,218 70,224
+                   C76,230 82,236 88,240 C94,244 100,246 106,248
+                   C110,249 114,250 118,250 C122,250 126,249 130,248
+                   C136,245 142,240 148,234 C154,228 160,220 166,212
+                   C172,204 177,194 180,184 C183,174 184,164 182,154
+                   C180,144 176,136 170,130 C165,125 160,121 155,118
+                   C150,115 145,113 140,112 C135,111 130,110 125,108
+                   C120,106 115,102 112,96 C109,90 108,82 110,74
+                   C112,66 116,58 122,50 C128,42 134,34 138,28
+                   C142,22 144,18 142,15 C140,12 135,12 128,14
+                   L105,15Z" fill="#c8e6c9" stroke="#81c784" stroke-width="1.5"/>
+          <!-- 東部山脈裝飾 -->
+          <path d="M135,30 C140,35 145,42 148,50 C150,55 148,60 145,65" fill="none" stroke="#a5d6a7" stroke-width="1" opacity="0.5"/>
+          <path d="M150,100 C155,108 158,118 160,128 C161,134 159,140 156,146" fill="none" stroke="#a5d6a7" stroke-width="1" opacity="0.5"/>
+          <!-- 城市標記（由JS動態控制顏色） -->
+          <circle id="mapCity0" cx="127" cy="22" r="4" fill="#66bb6a" stroke="#fff" stroke-width="1.5"/>
+          <text x="127" y="16" text-anchor="middle" font-size="6" fill="#2e7d32" font-weight="bold">台北</text>
+          <circle id="mapCity1" cx="112" cy="42" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
+          <text x="105" y="54" text-anchor="middle" font-size="5" fill="#666">桃園</text>
+          <circle id="mapCity2" cx="98" cy="62" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
+          <text x="91" y="73" text-anchor="middle" font-size="5" fill="#666">新竹</text>
+          <circle id="mapCity3" cx="92" cy="82" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
+          <text x="85" y="93" text-anchor="middle" font-size="5" fill="#666">苗栗</text>
+          <circle id="mapCity4" cx="82" cy="102" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
+          <text x="75" y="113" text-anchor="middle" font-size="5" fill="#666">台中</text>
+          <circle id="mapCity5" cx="76" cy="122" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
+          <text x="66" y="132" text-anchor="middle" font-size="5" fill="#666">彰化</text>
+          <circle id="mapCity6" cx="72" cy="142" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
+          <text x="62" y="152" text-anchor="middle" font-size="5" fill="#666">雲林</text>
+          <circle id="mapCity7" cx="68" cy="162" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
+          <text x="60" y="172" text-anchor="middle" font-size="5" fill="#666">嘉義</text>
+          <circle id="mapCity8" cx="58" cy="186" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
+          <text x="50" y="197" text-anchor="middle" font-size="5" fill="#666">台南</text>
+          <circle id="mapCity9" cx="52" cy="210" r="4" fill="#c8e6c9" stroke="#fff" stroke-width="1.5"/>
+          <text x="45" y="221" text-anchor="middle" font-size="5" fill="#666">高雄</text>
+          <!-- 路線連接線 -->
+          <polyline id="mapRoute" points="" fill="none" stroke="#ff9800" stroke-width="2" stroke-dasharray="4,3" stroke-linecap="round"/>
+        </svg>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:#666">
-        <span>🚩 台北 🐕🦊</span>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#666;margin-top:4px">
+        <span>🚩 台北</span>
         <span id="mapProgress">0%</span>
-        <span>🏁 高雄 🦁🐯</span>
+        <span>🏁 高雄</span>
       </div>
       <div style="margin-top:6px;text-align:center;font-size:12px;color:#555" id="mapDetail">
         🐾 動物們還需要走 450,000 步才能到高雄！
@@ -900,29 +938,46 @@ function updateMap() {
   const pct = Math.min(100, total/TOTAL_MAP_STEPS*100);
   document.getElementById('mapProgress').textContent = Math.round(pct)+'%';
   
-  let currentCity = CITIES[0];
+  let reachedCount = 0;
   for(let i=0;i<CITIES.length;i++){
-    if(total >= CITIES[i].step) currentCity = CITIES[i];
+    const dot = document.getElementById('mapCity'+i);
+    const visited = total >= CITIES[i].step;
+    if(visited){
+      dot.setAttribute('fill', '#43a047');
+      reachedCount = i;
+    } else if(i===reachedCount+1){
+      dot.setAttribute('fill', '#ff9800');
+      dot.setAttribute('r', '5');
+    } else {
+      dot.setAttribute('fill', '#c8e6c9');
+      dot.setAttribute('r', '4');
+    }
   }
   
+  // 高亮路線
+  const route = document.getElementById('mapRoute');
+  const points = [];
+  for(let i=0;i<=reachedCount;i++){
+    const dot = document.getElementById('mapCity'+i);
+    const cx = dot.getAttribute('cx');
+    const cy = dot.getAttribute('cy');
+    points.push(cx+','+cy);
+  }
+  if(reachedCount < CITIES.length-1){
+    const nextDot = document.getElementById('mapCity'+(reachedCount+1));
+    const cx = nextDot.getAttribute('cx');
+    const cy = nextDot.getAttribute('cy');
+    points.push(cx+','+cy);
+  }
+  route.setAttribute('points', points.join(' '));
+  
+  const currentCity = CITIES[Math.min(reachedCount, CITIES.length-1)];
   const remain = Math.max(0, TOTAL_MAP_STEPS - total);
   const a = currentUser ? (currentUser.animal||'🐕') : '🐕';
   document.getElementById('mapDetail').textContent = 
     remain > 0 
       ? `📍 ${a} 目前在 ${currentCity.name}，還需要 ${remain.toLocaleString()} 步到高雄！`
       : '🎉 已經到高雄了！動物大遷徙成功！';
-  
-  const mapEl = document.getElementById('mapPath');
-  mapEl.innerHTML = CITIES.map((city,i)=>{
-    const x = 5 + (i/(CITIES.length-1))*90;
-    const y = 80 - Math.sin(i/CITIES.length*Math.PI)*60;
-    const reached = total >= city.step;
-    const isCurrent = city===currentCity && !reached;
-    const isVisited = total >= city.step;
-    return `<div class="map-dot ${isVisited?'visited':''} ${isCurrent?'current':''}" 
-      style="left:${x}%;top:${y}%"></div>
-      <div class="map-label" style="left:${x}%;top:${y+11}%">${city.name}</div>`;
-  }).join('');
   
   if(total >= CITIES[4].step) earnBadge('halfway');
   if(total >= 20000) earnBadge('sprinter');
