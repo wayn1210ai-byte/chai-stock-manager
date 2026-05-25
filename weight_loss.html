@@ -169,15 +169,19 @@ img.emoji{height:1.2em;width:1.2em;min-width:16px;min-height:16px;max-width:36px
     
     <!-- Login -->
     <div class="auth-card" id="loginForm">
-      <input id="loginName" placeholder="請輸入你的大名" autocomplete="off">
-      <button class="btn-primary" onclick="login()">🚀 進入動物園</button>
-      <div class="hint">還沒有資料？輸入名字就會自動註冊囉～</div>
+      <input id="loginName" placeholder="👤 使用者名稱" autocomplete="off">
+      <input id="loginPw" type="password" placeholder="🔑 密碼" autocomplete="off" style="margin-bottom:6px">
+      <button class="btn-primary" onclick="login()">🚀 登入動物園</button>
+      <div class="hint">還沒有帳號？<span style="cursor:pointer;color:#66bb6a;font-weight:700" onclick="showRegister()">馬上註冊 →</span></div>
     </div>
     
     <!-- Register -->
     <div class="auth-card hide" id="registerForm">
       <div class="start-row">
-        <input id="regName" placeholder="你的大名" autocomplete="off" readonly>
+        <input id="regName" placeholder="👤 使用者名稱" autocomplete="off">
+      </div>
+      <div class="start-row">
+        <input id="regPw" type="password" placeholder="🔑 設定密碼（至少4碼）" autocomplete="off">
       </div>
       <div class="animal-picker-title">🐾 選一隻動物代表你！</div>
       <div class="animal-grid" id="animalPicker"></div>
@@ -629,22 +633,26 @@ function getAnimalInfo(emoji) {
 // ═══════════ AUTH ═══════════
 async function login() {
   const name = document.getElementById('loginName').value.trim();
-  if(!name) return toast('請輸入名字～');
-  const res = await api('/login', {name});
+  const pw = document.getElementById('loginPw').value;
+  if(!name) return toast('請輸入使用者名稱～');
+  if(!pw) return toast('請輸入密碼～');
+  const res = await api('/login', {name, password:pw});
   if(res.ok) {
     currentUser = res.user;
     document.getElementById('loginName').value = '';
+    document.getElementById('loginPw').value = '';
     enterApp();
-  } else if(res.newUser) {
-    document.getElementById('regName').value = name;
-    document.getElementById('loginForm').classList.add('hide');
-    document.getElementById('registerForm').classList.remove('hide');
-    // Auto-select random animal
-    const rand = ALL_ANIMALS[Math.floor(Math.random()*ALL_ANIMALS.length)];
-    selectAnimal(rand.emoji);
   } else {
-    toast(res.error || '登入失敗');
+    toast(res.error || '登入失敗～');
   }
+}
+
+function showRegister() {
+  document.getElementById('loginForm').classList.add('hide');
+  document.getElementById('registerForm').classList.remove('hide');
+  // Auto-select random animal
+  const rand = ALL_ANIMALS[Math.floor(Math.random()*ALL_ANIMALS.length)];
+  selectAnimal(rand.emoji);
 }
 
 function showLogin() {
@@ -654,12 +662,16 @@ function showLogin() {
 
 async function register() {
   const name = document.getElementById('regName').value.trim();
+  const pw = document.getElementById('regPw').value;
   const start = parseFloat(document.getElementById('regStart').value);
   const target = parseFloat(document.getElementById('regTarget').value);
   const height = parseInt(document.getElementById('regHeight').value) || 0;
   const animal = _selectedAnimal || '🐕';
-  if(!name||!start||!target) return toast('請填寫完整資料～');
-  const res = await api('/register', {name,start_weight:start,target_weight:target,height,animal});
+  if(!name) return toast('請輸入使用者名稱～');
+  if(!pw || pw.length < 4) return toast('密碼至少4碼喔～');
+  if(!start||!target) return toast('請填寫體重資料～');
+  if(!_selectedAnimal) return toast('請選一隻動物代表你！');
+  const res = await api('/register', {name,password:pw,start_weight:start,target_weight:target,height,animal});
   if(res.ok) {
     currentUser = res.user;
     enterApp();

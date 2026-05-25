@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """莊敬商科減肥比賽 - 後端 API (PostgreSQL + JSON 雙模式)"""
-import os, json, math, re
+import os, json, math, re, hashlib
 from datetime import datetime, date, timedelta
 from flask import Blueprint, request, jsonify, send_from_directory
 
@@ -54,6 +54,7 @@ def _init_pg_tables():
                 start_weight REAL DEFAULT 0,
                 target_weight REAL DEFAULT 0,
                 height INTEGER DEFAULT 0,
+                password TEXT DEFAULT '',
                 created TEXT DEFAULT ''
             );
             CREATE TABLE IF NOT EXISTS wl_steps (
@@ -89,10 +90,10 @@ def _load_users():
     if conn:
         try:
             cur = conn.cursor()
-            cur.execute("SELECT id, name, animal, start_weight, target_weight, height, created FROM wl_users ORDER BY id")
+            cur.execute("SELECT id, name, animal, start_weight, target_weight, height, password, created FROM wl_users ORDER BY id")
             rows = cur.fetchall()
             cur.close()
-            return [{'id':r[0],'name':r[1],'animal':r[2],'start_weight':r[3],'target_weight':r[4],'height':r[5],'created':r[6]} for r in rows]
+            return [{'id':r[0],'name':r[1],'animal':r[2],'start_weight':r[3],'target_weight':r[4],'height':r[5],'password':r[6],'created':r[7]} for r in rows]
         except Exception:
             pass
     # JSON fallback
@@ -105,8 +106,9 @@ def _save_users(users):
             cur = conn.cursor()
             cur.execute("DELETE FROM wl_users")
             for u in users:
-                cur.execute("INSERT INTO wl_users (id, name, animal, start_weight, target_weight, height, created) VALUES (%s,%s,%s,%s,%s,%s,%s)",
-                          (u['id'],u['name'],u['animal'],u['start_weight'],u['target_weight'],u['height'],u['created']))
+                pw = u.get('password', '')
+                cur.execute("INSERT INTO wl_users (id, name, animal, start_weight, target_weight, height, password, created) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                          (u['id'],u['name'],u['animal'],u['start_weight'],u['target_weight'],u['height'],pw,u['created']))
             cur.close()
             return
         except Exception:
@@ -250,27 +252,36 @@ def serve_page():
 def api_login():
     users = _load_users()
     name = request.json.get('name', '').strip()
-    if not name:
-        return jsonify({'ok':False,'error':'請輸入名字'})
+    pw = request.json.get('password', '')
+    if not name or not pw:
+        return jsonify({'ok':False,'error':'請輸入使用者名稱和密碼～'})
+    pwh = hashlib.sha256(pw.encode()).hexdigest()
     user = next((u for u in users if u['name'] == name), None)
-    if user:
-        return jsonify({'ok':True, 'user':user})
-    return jsonify({'ok':False, 'newUser':True})
+    if user and user.get('password', '') == pwh:
+        # Don't send password hash to client
+        u = {k:v for k,v in user.items() if k != 'password'}
+        return jsonify({'ok':True, 'user':u})
+    return jsonify({'ok':False, 'error':'使用者名稱或密碼錯誤～'})
 
 @wl.route('/api/register', methods=['POST'])
 def api_register():
     j = request.json
     name = j.get('name','').strip()
+    pw = j.get('password', '')
     if not name:
-        return jsonify({'ok':False,'error':'請輸入名字'})
+        return jsonify({'ok':False,'error':'請輸入使用者名稱～'})
+    if not pw or len(pw) < 4:
+        return jsonify({'ok':False,'error':'密碼至少4碼喔～'})
     users = _load_users()
     if any(u['name']==name for u in users):
-        return jsonify({'ok':False,'error':'這個名字已經有人用了～'})
+        return jsonify({'ok':False,'error':'這個名稱已經有人用了～'})
     nid = _get_next_id()
     animal = j.get('animal', '🐕')
+    pwh = hashlib.sha256(pw.encode()).hexdigest()
     user = {
         'id': nid,
         'name': name,
+        'password': pwh,
         'animal': animal,
         'start_weight': float(j.get('start_weight', 0)),
         'target_weight': float(j.get('target_weight', 0)),
@@ -279,7 +290,9 @@ def api_register():
     }
     users.append(user)
     _save_users(users)
-    return jsonify({'ok':True, 'user':user})
+    # Don't send password hash to client
+    u = {k:v for k,v in user.items() if k != 'password'}
+    return jsonify({'ok':True, 'user':u})
 
 @wl.route('/api/users')
 def api_users():
