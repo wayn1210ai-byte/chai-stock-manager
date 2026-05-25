@@ -472,12 +472,18 @@ function init() {
   
   // Spawn floating animals
   spawnFloatingAnimals();
-}
-document.addEventListener('DOMContentLoaded', function() {
-  if (typeof twemoji !== 'undefined') {
-    twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' });
+  // 等 DOM 準備好就把 emoji 轉 SVG
+  function twemojiParse() {
+    if (typeof twemoji !== 'undefined') {
+      twemoji.parse(document.body, { base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/' });
+    }
   }
-});
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', twemojiParse);
+  } else {
+    twemojiParse();
+  }
+}
 init();
 
 function spawnFloatingAnimals() {
