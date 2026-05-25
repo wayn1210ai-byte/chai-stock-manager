@@ -1,30 +1,242 @@
 #!/usr/bin/env python3
-"""莊敬商科減肥比賽 - 後端 API"""
-import os, json, math
+"""莊敬商科減肥比賽 - 後端 API (PostgreSQL + JSON 雙模式)"""
+import os, json, math, re
 from datetime import datetime, date, timedelta
 from flask import Blueprint, request, jsonify, send_from_directory
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(DIR, 'data')
 WL_FILE = os.path.join(DATA_DIR, 'weight_loss.json')
+DATABASE_URL = os.environ.get('DATABASE_URL', '') or os.environ.get('RENDER_DATABASE_URL', '') or ''
 
 wl = Blueprint('weight_loss', __name__)
 
-# ═══════════════ DATA HELPERS ═══════════════
+# ═══════════════ DATABASE SETUP ═══════════════
 
-def _ensure_data():
+def _fix_db_url(url):
+    """Fix Render internal hostname if missing TLD"""
+    if not url: return url
+    m = re.match(r'(postgresql://[^@]+@)([^:]+)(.*)', url)
+    if m and '.' not in m.group(2) and m.group(2) != 'localhost':
+        return m.group(1) + m.group(2) + '.render.com' + m.group(3)
+    return url
+
+DB_URL = _fix_db_url(DATABASE_URL)
+_use_pg = bool(DB_URL)
+_pg_conn = None
+
+def _get_pg():
+    global _pg_conn
+    if not _use_pg:
+        return None
+    try:
+        import psycopg2
+        if _pg_conn and _pg_conn.closed:
+            _pg_conn = None
+        if not _pg_conn:
+            _pg_conn = psycopg2.connect(DB_URL, sslmode='require', connect_timeout=10)
+            _pg_conn.autocommit = True
+            _init_pg_tables()
+        return _pg_conn
+    except Exception:
+        return None
+
+def _init_pg_tables():
+    try:
+        conn = _get_pg()
+        if not conn: return
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS wl_users (
+                id SERIAL PRIMARY KEY,
+                name TEXT UNIQUE NOT NULL,
+                animal TEXT DEFAULT '🐕',
+                start_weight REAL DEFAULT 0,
+                target_weight REAL DEFAULT 0,
+                height INTEGER DEFAULT 0,
+                created TEXT DEFAULT ''
+            );
+            CREATE TABLE IF NOT EXISTS wl_steps (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES wl_users(id),
+                date TEXT NOT NULL,
+                value INTEGER DEFAULT 0,
+                UNIQUE(user_id, date)
+            );
+            CREATE TABLE IF NOT EXISTS wl_weights (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES wl_users(id),
+                week TEXT NOT NULL,
+                value REAL DEFAULT 0,
+                UNIQUE(user_id, week)
+            );
+            CREATE TABLE IF NOT EXISTS wl_badges (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES wl_users(id),
+                badge_id TEXT NOT NULL,
+                earned BOOLEAN DEFAULT true,
+                UNIQUE(user_id, badge_id)
+            );
+        """)
+        cur.close()
+    except Exception as e:
+        print(f'⚠️ PostgreSQL init error: {e}')
+
+# ═══════════════ DATA HELPERS (PostgreSQL優先, JSON備援) ═══════════════
+
+def _load_users():
+    conn = _get_pg()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT id, name, animal, start_weight, target_weight, height, created FROM wl_users ORDER BY id")
+            rows = cur.fetchall()
+            cur.close()
+            return [{'id':r[0],'name':r[1],'animal':r[2],'start_weight':r[3],'target_weight':r[4],'height':r[5],'created':r[6]} for r in rows]
+        except Exception:
+            pass
+    # JSON fallback
+    return _load_json().get('users', [])
+
+def _save_users(users):
+    conn = _get_pg()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM wl_users")
+            for u in users:
+                cur.execute("INSERT INTO wl_users (id, name, animal, start_weight, target_weight, height, created) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                          (u['id'],u['name'],u['animal'],u['start_weight'],u['target_weight'],u['height'],u['created']))
+            cur.close()
+            return
+        except Exception:
+            pass
+    # JSON fallback
+    d = _load_json()
+    d['users'] = users
+    _save_json(d)
+
+def _load_steps(uid):
+    conn = _get_pg()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT date, value FROM wl_steps WHERE user_id=%s", (int(uid),))
+            rows = cur.fetchall()
+            cur.close()
+            return {r[0]:r[1] for r in rows}
+        except Exception:
+            pass
+    d = _load_json()
+    return d.get('steps', {}).get(uid, {})
+
+def _save_steps(uid, date_str, val):
+    conn = _get_pg()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("INSERT INTO wl_steps (user_id, date, value) VALUES (%s,%s,%s) ON CONFLICT (user_id, date) DO UPDATE SET value=%s",
+                       (int(uid), date_str, val, val))
+            cur.close()
+            return
+        except Exception:
+            pass
+    d = _load_json()
+    if uid not in d['steps']: d['steps'][uid] = {}
+    d['steps'][uid][date_str] = val
+    _save_json(d)
+
+def _load_weights(uid):
+    conn = _get_pg()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT week, value FROM wl_weights WHERE user_id=%s", (int(uid),))
+            rows = cur.fetchall()
+            cur.close()
+            return {r[0]:r[1] for r in rows}
+        except Exception:
+            pass
+    d = _load_json()
+    return d.get('weights', {}).get(uid, {})
+
+def _save_weight(uid, week, val):
+    conn = _get_pg()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("INSERT INTO wl_weights (user_id, week, value) VALUES (%s,%s,%s) ON CONFLICT (user_id, week) DO UPDATE SET value=%s",
+                       (int(uid), week, val, val))
+            cur.close()
+            return
+        except Exception:
+            pass
+    d = _load_json()
+    if uid not in d['weights']: d['weights'][uid] = {}
+    d['weights'][uid][week] = val
+    _save_json(d)
+
+def _load_badges(uid):
+    conn = _get_pg()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT badge_id FROM wl_badges WHERE user_id=%s", (int(uid),))
+            rows = cur.fetchall()
+            cur.close()
+            return {r[0]:True for r in rows}
+        except Exception:
+            pass
+    d = _load_json()
+    return d.get('badges', {}).get(uid, {})
+
+def _save_badge(uid, badge_id):
+    conn = _get_pg()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("INSERT INTO wl_badges (user_id, badge_id) VALUES (%s,%s) ON CONFLICT (user_id, badge_id) DO NOTHING",
+                       (int(uid), badge_id))
+            cur.close()
+            return
+        except Exception:
+            pass
+    d = _load_json()
+    if uid not in d['badges']: d['badges'][uid] = {}
+    d['badges'][uid][badge_id] = True
+    _save_json(d)
+
+def _get_next_id():
+    conn = _get_pg()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT COALESCE(MAX(id),0)+1 FROM wl_users")
+            nid = cur.fetchone()[0]
+            cur.close()
+            return nid
+        except Exception:
+            pass
+    d = _load_json()
+    nid = d.get('next_id', 1)
+    d['next_id'] = nid + 1
+    _save_json(d)
+    return nid
+
+# JSON backup helpers
+def _ensure_json():
     os.makedirs(DATA_DIR, exist_ok=True)
     if not os.path.exists(WL_FILE):
         with open(WL_FILE, 'w', encoding='utf-8') as f:
             json.dump({'users':[],'steps':{},'weights':{},'badges':{},'challenges':{},'next_id':1}, f, ensure_ascii=False, indent=2)
 
-def _load_data():
-    _ensure_data()
+def _load_json():
+    _ensure_json()
     with open(WL_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-def _save_data(data):
-    _ensure_data()
+def _save_json(data):
+    _ensure_json()
     with open(WL_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -36,28 +248,28 @@ def serve_page():
 
 @wl.route('/api/login', methods=['POST'])
 def api_login():
-    data = _load_data()
+    users = _load_users()
     name = request.json.get('name', '').strip()
     if not name:
         return jsonify({'ok':False,'error':'請輸入名字'})
-    user = next((u for u in data['users'] if u['name'] == name), None)
+    user = next((u for u in users if u['name'] == name), None)
     if user:
         return jsonify({'ok':True, 'user':user})
-    # New user - return flag to show registration
     return jsonify({'ok':False, 'newUser':True})
 
 @wl.route('/api/register', methods=['POST'])
 def api_register():
-    data = _load_data()
     j = request.json
     name = j.get('name','').strip()
     if not name:
         return jsonify({'ok':False,'error':'請輸入名字'})
-    if any(u['name']==name for u in data['users']):
+    users = _load_users()
+    if any(u['name']==name for u in users):
         return jsonify({'ok':False,'error':'這個名字已經有人用了～'})
+    nid = _get_next_id()
     animal = j.get('animal', '🐕')
     user = {
-        'id': data['next_id'],
+        'id': nid,
         'name': name,
         'animal': animal,
         'start_weight': float(j.get('start_weight', 0)),
@@ -65,236 +277,96 @@ def api_register():
         'height': int(j.get('height', 0)),
         'created': datetime.now().isoformat(),
     }
-    data['users'].append(user)
-    data['next_id'] += 1
-    # Init data structures for this user
-    uid = str(user['id'])
-    if uid not in data['steps']: data['steps'][uid] = {}
-    if uid not in data['weights']: data['weights'][uid] = {}
-    if uid not in data['badges']: data['badges'][uid] = {}
-    _save_data(data)
+    users.append(user)
+    _save_users(users)
     return jsonify({'ok':True, 'user':user})
 
 @wl.route('/api/users')
 def api_users():
-    data = _load_data()
-    return jsonify({'ok':True, 'users':data['users']})
+    return jsonify({'ok':True, 'users':_load_users()})
 
 # ═══════════════ STEPS ═══════════════
 
 @wl.route('/api/steps/<uid>')
 def api_get_steps(uid):
-    data = _load_data()
-    steps = data['steps'].get(uid, {})
-    return jsonify({'ok':True, 'steps':steps})
+    return jsonify({'ok':True, 'steps':_load_steps(uid)})
 
 @wl.route('/api/steps', methods=['POST'])
 def api_save_steps():
-    data = _load_data()
     j = request.json
     uid = str(j.get('user_id'))
     date_str = j.get('date', '')
     val = int(j.get('steps', 0))
-    if uid not in data['steps']:
-        data['steps'][uid] = {}
-    data['steps'][uid][date_str] = val
-    _save_data(data)
-    return jsonify({'ok':True, 'steps':data['steps'][uid]})
+    _save_steps(uid, date_str, val)
+    return jsonify({'ok':True, 'steps':_load_steps(uid)})
 
 # ═══════════════ WEIGHT ═══════════════
 
 @wl.route('/api/weights/<uid>')
 def api_get_weights(uid):
-    data = _load_data()
-    weights = data['weights'].get(uid, {})
-    return jsonify({'ok':True, 'weights':weights})
+    return jsonify({'ok':True, 'weights':_load_weights(uid)})
 
 @wl.route('/api/weight', methods=['POST'])
 def api_save_weight():
-    data = _load_data()
     j = request.json
     uid = str(j.get('user_id'))
     week = j.get('week', '')
     val = float(j.get('weight', 0))
-    if uid not in data['weights']:
-        data['weights'][uid] = {}
-    # Check if already recorded this week
-    if week in data['weights'][uid]:
-        return jsonify({'ok':False, 'error':'這週已經記錄過了～每週只能記錄一次喔！'})
-    data['weights'][uid][week] = val
-    _save_data(data)
-    return jsonify({'ok':True, 'weights':data['weights'][uid]})
-
-# ═══════════════ LEADERBOARD ═══════════════
-
-@wl.route('/api/leaderboard')
-def api_leaderboard():
-    data = _load_data()
-    week = request.args.get('week', '')
-    if not week:
-        # Default to current ISO week
-        today = date.today()
-        iso = today.isocalendar()
-        week = f"{iso[0]}-W{iso[1]:02d}"
-    
-    ranking = []
-    for user in data['users']:
-        uid = str(user['id'])
-        user_weights = data['weights'].get(uid, {})
-        # Find latest weight before or on this week
-        relevant_weights = {k:v for k,v in user_weights.items() if k <= week}
-        if not relevant_weights:
-            continue
-        sorted_weeks = sorted(relevant_weights.keys())
-        cur_weight = relevant_weights.get(week)
-        if cur_weight is None:
-            cur_weight = relevant_weights[sorted_weeks[-1]]
-        
-        start_w = user['start_weight']
-        lost = start_w - cur_weight
-        percent = (lost / start_w * 100) if start_w > 0 else 0
-        
-        ranking.append({
-            'id': user['id'],
-            'name': user['name'],
-            'start_weight': start_w,
-            'current_weight': round(cur_weight, 1),
-            'lost': round(lost, 2),
-            'percent': round(percent, 2),
-        })
-    
-    ranking.sort(key=lambda x: x['percent'], reverse=True)
-    return jsonify({'ok':True, 'ranking':ranking, 'week':week})
+    _save_weight(uid, week, val)
+    return jsonify({'ok':True, 'weights':_load_weights(uid)})
 
 # ═══════════════ BADGES ═══════════════
 
 @wl.route('/api/badges/<uid>')
 def api_get_badges(uid):
-    data = _load_data()
-    badges = data['badges'].get(uid, {})
-    return jsonify({'ok':True, 'badges':badges})
+    return jsonify({'ok':True, 'badges':_load_badges(uid)})
 
-@wl.route('/api/earn-badge', methods=['POST'])
+@wl.route('/api/badge', methods=['POST'])
 def api_earn_badge():
-    data = _load_data()
     j = request.json
     uid = str(j.get('user_id'))
     badge_id = j.get('badge_id', '')
-    if uid not in data['badges']:
-        data['badges'][uid] = {}
-    if data['badges'][uid].get(badge_id):
-        return jsonify({'ok':True, 'new':False})
-    data['badges'][uid][badge_id] = True
-    _save_data(data)
-    return jsonify({'ok':True, 'new':True})
+    _save_badge(uid, badge_id)
+    return jsonify({'ok':True, 'badges':_load_badges(uid)})
 
-@wl.route('/api/check-badges', methods=['POST'])
-def api_check_badges():
-    data = _load_data()
-    j = request.json
-    uid = str(j.get('user_id'))
-    user = next((u for u in data['users'] if str(u['id'])==uid), None)
-    if not user:
-        return jsonify({'ok':False})
-    
-    badges = data['badges'].get(uid, {})
-    if uid not in data['badges']:
-        data['badges'][uid] = {}
-    
-    steps = data['steps'].get(uid, {})
-    weights = data['weights'].get(uid, {})
-    new_badge = None
-    
-    # Check: first_step - first weight recorded
-    if not badges.get('first_step') and any(v>0 for v in weights.values()):
-        data['badges'][uid]['first_step'] = True
-        new_badge = '第一步'
-    
-    # Check: walker_d7 - 7 consecutive days > 8000
-    if not badges.get('walker_d7'):
-        sorted_dates = sorted(steps.keys())
-        count = 0
-        for d in sorted_dates:
-            if steps[d] >= 8000:
-                count += 1
-                if count >= 7:
-                    data['badges'][uid]['walker_d7'] = True
-                    new_badge = '步行達人'
-                    break
-            else:
-                count = 0
-    
-    # Check: sprinter - single day > 20000
-    if not badges.get('sprinter'):
-        if any(v > 20000 for v in steps.values()):
-            data['badges'][uid]['sprinter'] = True
-            if not new_badge: new_badge = '暴走族'
-    
-    # Check: newbie - first week lost > 1kg
-    if not badges.get('newbie'):
-        sorted_weeks = sorted(k for k,v in weights.items() if v>0)
-        if len(sorted_weeks) >= 1:
-            first_w = sorted_weeks[0]
-            first_val = weights[first_w]
-            if user['start_weight'] - first_val > 1:
-                data['badges'][uid]['newbie'] = True
-                if not new_badge: new_badge = '減重新人'
-    
-    # Check: streak4 - 4 consecutive weeks of weight records
-    if not badges.get('streak4'):
-        sorted_weeks = sorted(k for k,v in weights.items() if v>0)
-        if len(sorted_weeks) >= 4:
-            data['badges'][uid]['streak4'] = True
-            if not new_badge: new_badge = '毅力獎'
-    
-    # Check: wk_champ - was #1 in any week
-    if not badges.get('wk_champ'):
-        data['badges'][uid]['wk_champ'] = True
-        if not new_badge: new_badge = '週冠軍'
-    
-    # Check: burn100k - total weekly steps > 100000
-    if not badges.get('burn100k'):
-        today = date.today()
-        monday = today - timedelta(days=today.weekday())
-        week_total = 0
-        for i in range(7):
-            d = (monday + timedelta(days=i)).isoformat()
-            week_total += steps.get(d, 0)
-        if week_total >= 100000:
-            data['badges'][uid]['burn100k'] = True
-            if not new_badge: new_badge = '燃燒吧'
-    
-    # Check: goal - reached target weight
-    if not badges.get('goal'):
-        sorted_weeks = sorted(k for k,v in weights.items() if v>0)
-        if sorted_weeks:
-            latest = weights[sorted_weeks[-1]]
-            if latest <= user['target_weight']:
-                data['badges'][uid]['goal'] = True
-                if not new_badge: new_badge = '達標者'
-    
-    # Check: shiba30 - registered more than 30 days ago
-    if not badges.get('shiba30'):
-        created = datetime.fromisoformat(user['created'])
-        if (datetime.now() - created).days >= 30:
-            data['badges'][uid]['shiba30'] = True
-            if not new_badge: new_badge = '阿柴加持'
-    
-    if new_badge:
-        _save_data(data)
-    
-    return jsonify({'ok':True, 'newBadge':bool(new_badge), 'badgeName':new_badge or ''})
+# ═══════════════ RANKINGS ═══════════════
 
-# ═══════════════ CHALLENGES ═══════════════
+@wl.route('/api/rankings')
+def api_rankings():
+    users = _load_users()
+    rankings = []
+    for u in users:
+        uid = str(u['id'])
+        ws = _load_weights(uid)
+        sw = u['start_weight']
+        vals = [ws[k] for k in sorted(ws.keys()) if ws[k] > 0]
+        cw = vals[-1] if vals else sw
+        lost = sw - cw
+        pct = (lost/sw*100) if sw > 0 else 0
+        steps = _load_steps(uid)
+        total_steps = sum(steps.values())
+        rankings.append({
+            'id': u['id'],
+            'name': u['name'],
+            'animal': u['animal'],
+            'start_weight': sw,
+            'current_weight': round(cw,1),
+            'lost': round(lost,1),
+            'percent': round(pct,1),
+            'total_steps': total_steps,
+        })
+    rankings.sort(key=lambda r: r['percent'], reverse=True)
+    return jsonify({'ok':True, 'rankings':rankings})
 
-@wl.route('/api/challenges/<uid>')
-def api_get_challenges(uid):
-    data = _load_data()
-    ch = data['challenges'].get(uid, {'score':0, 'completed':[]})
-    return jsonify({'ok':True, **ch})
+@wl.route('/api/status')
+def api_status():
+    return jsonify({
+        'ok': True,
+        'database': 'PostgreSQL' if _use_pg and _get_pg() else 'JSON 檔案',
+        'connected': bool(_use_pg and _get_pg()),
+    })
 
-# ═══════════════ REGISTER ═══════════════
+# ═══════════════ REGISTER BLUEPRINT ═══════════════
 
 def register_blueprint(app):
     app.register_blueprint(wl, url_prefix='/wl')
-    print('🐕 減肥比賽 API 已載入 → /wl')
