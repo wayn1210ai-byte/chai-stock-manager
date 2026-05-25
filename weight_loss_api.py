@@ -55,9 +55,11 @@ def api_register():
         return jsonify({'ok':False,'error':'請輸入名字'})
     if any(u['name']==name for u in data['users']):
         return jsonify({'ok':False,'error':'這個名字已經有人用了～'})
+    animal = j.get('animal', '🐕')
     user = {
         'id': data['next_id'],
         'name': name,
+        'animal': animal,
         'start_weight': float(j.get('start_weight', 0)),
         'target_weight': float(j.get('target_weight', 0)),
         'height': int(j.get('height', 0)),

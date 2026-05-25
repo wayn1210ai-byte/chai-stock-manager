@@ -3,151 +3,192 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,maximum-scale=1.0">
-<title>🐕 莊敬商科減肥比賽</title>
+<title>🐾 莊敬商科動物園減肥大賽</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 /* ═══════ RESET & BASE ═══════ */
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient(135deg,#fff5f5,#fce4ec,#f3e5f5);min-height:100vh;padding-bottom:80px;touch-action:manipulation}
+body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient(135deg,#e8f5e9,#fff3e0,#fce4ec);min-height:100vh;padding-bottom:80px;touch-action:manipulation;overflow-x:hidden}
 .hide{display:none!important}
 
+/* ═══════ FLOATING ANIMALS ═══════ */
+.floating-animals{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden}
+.float-animal{position:absolute;font-size:24px;animation:floatAround linear infinite;opacity:0.3}
+@keyframes floatAround{0%{transform:translateY(100vh) rotate(0deg);opacity:0}10%{opacity:0.25}90%{opacity:0.25}100%{transform:translateY(-10vh) rotate(360deg);opacity:0}}
+
 /* ═══════ TOP BAR ═══════ */
-#topBar{background:linear-gradient(135deg,#ff9a9e,#fad0c4);padding:12px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 20px rgba(255,154,158,0.3);position:sticky;top:0;z-index:100}
-#topBar .logo{font-size:28px;animation:bounce 2s infinite}
-#topBar h1{font-size:18px;font-weight:800;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,0.15);flex:1}
-#topBar .user-badge{background:rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;font-size:12px;color:#fff;font-weight:700}
-@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+#topBar{background:linear-gradient(135deg,#43a047,#66bb6a,#81c784);padding:10px 14px;display:flex;align-items:center;gap:8px;box-shadow:0 2px 20px rgba(67,160,71,0.3);position:sticky;top:0;z-index:100}
+#topBar .user-animal{font-size:28px;animation:animalBounce 2s infinite;cursor:pointer;transition:0.2s}
+#topBar .user-animal:hover{transform:scale(1.2)}
+#topBar h1{font-size:16px;font-weight:800;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,0.15);flex:1}
+#topBar .user-badge{background:rgba(255,255,255,0.25);border-radius:20px;padding:4px 12px;font-size:12px;color:#fff;font-weight:700;display:flex;align-items:center;gap:4px}
+@keyframes animalBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 
 /* ═══════ AUTH SCREEN ═══════ */
-#authScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#ff9a9e,#fad0c4,#fbc2eb)}
-#authScreen .logo{font-size:80px;margin-bottom:8px;animation:bounce 2s infinite}
-#authScreen h2{font-size:28px;font-weight:900;color:#fff;text-shadow:2px 2px 8px rgba(0,0,0,0.1);margin-bottom:4px}
-#authScreen p{color:rgba(255,255,255,0.85);font-size:14px;margin-bottom:24px}
-.auth-card{background:rgba(255,255,255,0.95);border-radius:24px;padding:32px 24px;width:100%;max-width:360px;box-shadow:0 8px 40px rgba(0,0,0,0.1)}
-.auth-card input{width:100%;padding:14px 16px;border:2px solid #eee;border-radius:12px;font-size:16px;margin-bottom:12px;outline:none;transition:0.2s}
-.auth-card input:focus{border-color:#ff9a9e}
-.auth-card .btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,#ff9a9e,#fad0c4);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;transition:0.2s}
-.auth-card .btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(255,154,158,0.4)}
+#authScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#a8e063,#56ab2f,#43a047);position:relative;overflow:hidden}
+#authScreen .auth-inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;width:100%;max-width:400px}
+#authScreen .logo{font-size:70px;margin-bottom:4px;animation:animalBounce 1.5s infinite}
+#authScreen .logo-sub{font-size:14px;color:rgba(255,255,255,0.9);margin-bottom:2px}
+#authScreen h2{font-size:26px;font-weight:900;color:#fff;text-shadow:2px 2px 8px rgba(0,0,0,0.15);margin-bottom:2px}
+#authScreen .subtitle{color:rgba(255,255,255,0.85);font-size:13px;margin-bottom:20px;text-align:center}
+.auth-card{background:rgba(255,255,255,0.95);border-radius:24px;padding:28px 20px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,0.12)}
+.auth-card input{width:100%;padding:12px 14px;border:2px solid #e8f5e9;border-radius:12px;font-size:15px;margin-bottom:10px;outline:none;transition:0.2s}
+.auth-card input:focus{border-color:#66bb6a}
+.auth-card .btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,#66bb6a,#43a047);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;transition:0.2s}
+.auth-card .btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(67,160,71,0.4)}
 .auth-card .hint{text-align:center;color:#999;font-size:12px;margin-top:12px}
-.auth-card .start-row{display:flex;gap:8px;margin-bottom:8px}
+
+/* ═══════ ANIMAL PICKER ═══════ */
+.animal-picker-title{font-size:13px;font-weight:700;color:#666;margin-bottom:8px;text-align:center}
+.animal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
+.animal-opt{padding:8px 4px;border-radius:12px;border:2px solid #e8f5e9;background:#fafffa;text-align:center;cursor:pointer;transition:0.2s}
+.animal-opt .emoji{font-size:24px;display:block}
+.animal-opt .name{font-size:9px;color:#999;margin-top:2px}
+.animal-opt.selected{border-color:#66bb6a;background:#e8f5e9;transform:scale(1.05)}
+.animal-opt.selected .name{color:#43a047;font-weight:700}
+.animal-opt:hover{transform:scale(1.08);border-color:#a5d6a7}
+.auth-card .start-row{display:flex;gap:8px;margin-bottom:6px}
 .auth-card .start-row input{flex:1;margin-bottom:0}
 
 /* ═══════ BOTTOM NAV ═══════ */
-#bottomNav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid #f0f0f0;z-index:100;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 20px rgba(0,0,0,0.05)}
-.nav-item{flex:1;text-align:center;padding:8px 2px;cursor:pointer;color:#bbb;transition:0.2s;font-size:10px;font-weight:600}
-.nav-item .nav-icon{font-size:22px;display:block;margin-bottom:2px}
-.nav-item.active{color:#ff9a9e}
+#bottomNav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid #e8f5e9;z-index:100;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 20px rgba(0,0,0,0.05)}
+.nav-item{flex:1;text-align:center;padding:6px 2px;cursor:pointer;color:#bbb;transition:0.2s;font-size:9px;font-weight:600}
+.nav-item .nav-icon{font-size:20px;display:block;margin-bottom:1px}
+.nav-item.active{color:#43a047}
 .nav-item.active .nav-icon{transform:scale(1.1)}
 
 /* ═══════ PAGES ═══════ */
-.page{padding:16px;display:none}
-.page.active{display:block}
-.page-title{font-size:18px;font-weight:800;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.page{padding:14px;display:none;position:relative;z-index:1}
+.page.active{display:block;animation:pageIn 0.3s}
+@keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.page-title{font-size:17px;font-weight:800;color:#333;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 
 /* ═══════ CARDS ═══════ */
-.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
-.card-title{font-size:14px;font-weight:700;color:#666;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.stat-row{display:flex;gap:8px;margin-bottom:8px}
-.stat-box{flex:1;background:linear-gradient(135deg,#f8f9fa,#fff);border-radius:12px;padding:12px;text-align:center}
-.stat-box .num{font-size:22px;font-weight:800;color:#ff9a9e;display:block}
-.stat-box .label{font-size:11px;color:#999;margin-top:2px}
+.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 2px 12px rgba(0,0,0,0.06);border:1px solid rgba(200,230,201,0.3)}
+.card-title{font-size:13px;font-weight:700;color:#555;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.stat-row{display:flex;gap:6px;margin-bottom:6px}
+.stat-box{flex:1;background:linear-gradient(135deg,#f1f8e9,#fff);border-radius:12px;padding:10px 6px;text-align:center;border:1px solid #e8f5e9}
+.stat-box .num{font-size:20px;font-weight:800;color:#43a047;display:block}
+.stat-box .label{font-size:10px;color:#999;margin-top:2px}
 
 /* ═══════ LEADERBOARD ═══════ */
-.rank-item{display:flex;align-items:center;padding:10px 12px;border-radius:12px;margin-bottom:6px;background:#f8f9fa;gap:10px;transition:0.2s}
+.rank-item{display:flex;align-items:center;padding:8px 10px;border-radius:12px;margin-bottom:5px;background:#f8f9fa;gap:8px;transition:0.2s}
+.rank-item .rank-animal{font-size:22px;width:32px;text-align:center}
 .rank-item.top1{background:linear-gradient(135deg,#fff8e1,#ffecb3);border:1px solid #ffd54f}
 .rank-item.top2{background:linear-gradient(135deg,#f5f5f5,#e0e0e0);border:1px solid #bdbdbd}
 .rank-item.top3{background:linear-gradient(135deg,#fff3e0,#ffccbc);border:1px solid #ffab91}
-.rank-item .rank-num{font-size:18px;font-weight:900;width:28px;text-align:center}
-.rank-item .rank-name{flex:1;font-weight:700;font-size:14px;color:#333}
-.rank-item .rank-data{text-align:right;font-size:12px;color:#666}
-.rank-item .rank-data .val{font-weight:800;color:#ff9a9e;font-size:15px}
+.rank-item .rank-num{font-size:16px;font-weight:900;width:24px;text-align:center}
+.rank-item .rank-name{flex:1;font-weight:700;font-size:13px;color:#333}
+.rank-item .rank-data{text-align:right;font-size:11px;color:#666}
+.rank-item .rank-data .val{font-weight:800;color:#43a047;font-size:14px}
 
 /* ═══════ INPUT ═══════ */
-.input-group{margin-bottom:12px}
-.input-group label{display:block;font-size:13px;font-weight:700;color:#666;margin-bottom:4px}
-.input-group input{width:100%;padding:12px 14px;border:2px solid #eee;border-radius:10px;font-size:15px;outline:none;transition:0.2s}
-.input-group input:focus{border-color:#ff9a9e}
-.btn{display:block;width:100%;padding:12px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:0.2s;text-align:center}
-.btn-pink{background:linear-gradient(135deg,#ff9a9e,#fad0c4);color:#fff}
-.btn-pink:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(255,154,158,0.3)}
-.btn-outline{background:#fff;border:2px solid #ff9a9e;color:#ff9a9e}
-.btn-outline:hover{background:#fff5f5}
+.input-group{margin-bottom:10px}
+.input-group label{display:block;font-size:12px;font-weight:700;color:#555;margin-bottom:3px}
+.input-group input{width:100%;padding:10px 12px;border:2px solid #e8f5e9;border-radius:10px;font-size:14px;outline:none;transition:0.2s}
+.input-group input:focus{border-color:#66bb6a}
+.btn{display:block;width:100%;padding:11px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:0.2s;text-align:center}
+.btn-green{background:linear-gradient(135deg,#66bb6a,#43a047);color:#fff}
+.btn-green:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(67,160,71,0.3)}
+.btn-outline{background:#fff;border:2px solid #66bb6a;color:#66bb6a}
+.btn-outline:hover{background:#f1f8e9}
 
 /* ═══════ BADGES ═══════ */
-.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.badge-item{text-align:center;padding:12px 6px;border-radius:12px;background:#f8f9fa;transition:0.2s}
-.badge-item .badge-icon{font-size:32px;display:block;margin-bottom:4px}
-.badge-item .badge-name{font-size:10px;font-weight:700;color:#666}
+.badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.badge-item{text-align:center;padding:10px 4px;border-radius:12px;background:#f8f9fa;transition:0.3s}
+.badge-item .badge-icon{font-size:28px;display:block;margin-bottom:3px}
+.badge-item .badge-name{font-size:9px;font-weight:700;color:#555}
 .badge-item.locked{opacity:0.35;filter:grayscale(1)}
-.badge-item.unlocked{background:linear-gradient(135deg,#fff8e1,#fff3e0);border:1px solid #ffd54f}
+.badge-item.unlocked{background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border:1px solid #81c784}
 .badge-item.unlocked .badge-icon{animation:badgePop 0.5s}
+@keyframes badgePop{0%{transform:scale(0)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
 
 /* ═══════ MAP ═══════ */
-.map-container{position:relative;width:100%;height:180px;background:linear-gradient(180deg,#e8f5e9,#c8e6c9,#a5d6a7);border-radius:12px;overflow:hidden;margin-bottom:8px}
-.map-path{position:absolute;top:10%;left:5%;right:5%;height:80%}
-.map-dot{position:absolute;width:14px;height:14px;background:#ff9a9e;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.2);transition:0.3s}
-.map-dot.visited{background:#4caf50}
-.map-dot.current{background:#ff9800;animation:pulse 1s infinite;width:18px;height:18px;z-index:2}
-.map-label{position:absolute;font-size:8px;font-weight:700;color:#666;transform:translateX(-50%);white-space:nowrap}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+.map-container{position:relative;width:100%;height:170px;background:linear-gradient(180deg,#c8e6c9,#a5d6a7,#81c784);border-radius:12px;overflow:hidden;margin-bottom:6px;border:2px solid #e8f5e9}
+.map-path{position:absolute;top:5%;left:3%;right:3%;height:90%}
+.map-dot{position:absolute;width:12px;height:12px;background:#66bb6a;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.2);transition:0.3s}
+.map-dot.visited{background:#43a047}
+.map-dot.current{background:#ff9800;animation:pulse 1s infinite;width:16px;height:16px;z-index:2}
+.map-label{position:absolute;font-size:7px;font-weight:700;color:#2e7d32;transform:translateX(-50%);white-space:nowrap;text-shadow:0 0 4px #fff}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
 
 /* ═══════ CHART ═══════ */
-.chart-wrap{width:100%;height:200px;margin-bottom:8px}
+.chart-wrap{width:100%;height:180px;margin-bottom:6px}
+
+/* ═══════ ANIMAL MESSAGE ═══════ */
+.animal-msg{background:linear-gradient(135deg,#e8f5e9,#f1f8e9);border-radius:16px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;border-left:4px solid #43a047}
+.animal-msg .animal-icon{font-size:30px;animation:animalBounce 2.5s infinite}
+.animal-msg .msg-text{font-size:12px;color:#555;line-height:1.5;flex:1}
+
+/* ═══════ WEEK SELECT ═══════ */
+.week-select{display:flex;gap:4px;margin-bottom:10px;overflow-x:auto;padding-bottom:4px}
+.week-select .ws-btn{padding:5px 12px;border-radius:20px;border:2px solid #e8f5e9;background:#fff;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:0.2s;color:#666}
+.week-select .ws-btn.active{background:#66bb6a;border-color:#66bb6a;color:#fff}
+.trend-up{color:#4caf50}
+.trend-down{color:#f44336}
 
 /* ═══════ CHALLENGE ═══════ */
-.challenge-item{display:flex;align-items:center;padding:12px;border-radius:12px;background:#f8f9fa;margin-bottom:8px;gap:10px}
-.challenge-item .ch-icon{font-size:28px}
+.challenge-item{display:flex;align-items:center;padding:10px;border-radius:12px;background:#f8f9fa;margin-bottom:6px;gap:8px}
+.challenge-item .ch-icon{font-size:26px}
 .challenge-item .ch-info{flex:1}
-.challenge-item .ch-info .ch-title{font-size:14px;font-weight:700;color:#333}
-.challenge-item .ch-info .ch-desc{font-size:11px;color:#999}
-.challenge-item .ch-status{font-size:20px}
+.challenge-item .ch-info .ch-title{font-size:13px;font-weight:700;color:#333}
+.challenge-item .ch-info .ch-desc{font-size:10px;color:#999}
+.challenge-item .ch-status{font-size:18px}
 
 /* ═══════ NOTIFICATION ═══════ */
-.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:999;animation:toastIn 0.3s;max-width:90%;text-align:center}
-@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:999;animation:toastIn 0.3s;max-width:90%;text-align:center}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-15px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
 /* ═══════ CONFETTI ═══════ */
 .confetti-container{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden}
-.confetti{position:absolute;width:10px;height:10px;border-radius:2px;animation:confettiFall linear forwards}
+.confetti{position:absolute;width:8px;height:8px;border-radius:2px;animation:confettiFall linear forwards}
 @keyframes confettiFall{0%{transform:translateY(-10px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
 
+/* ═══════ ENTRANCE ANIMALS ═══════ */
+.entrance-parade{display:flex;gap:4px;margin-bottom:12px;font-size:22px;flex-wrap:wrap;justify-content:center;animation:paradeIn 1s}
+@keyframes paradeIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
+
 /* ═══════ MISC ═══════ */
-.shiba-msg{background:linear-gradient(135deg,#fff8e1,#fff3e0);border-radius:16px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px;border-left:4px solid #ff9800}
-.shiba-msg .shiba-icon{font-size:32px}
-.shiba-msg .msg-text{font-size:13px;color:#666;line-height:1.5}
-.week-select{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
-.week-select .ws-btn{padding:6px 14px;border-radius:20px;border:2px solid #eee;background:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:0.2s;color:#666}
-.week-select .ws-btn.active{background:#ff9a9e;border-color:#ff9a9e;color:#fff}
-.week-select .ws-btn.completed{border-color:#4caf50;color:#4caf50}
-.trend-up{color:#4caf50}
-.trend-down{color:#f44336}
+.animal-tag{display:inline-flex;align-items:center;gap:3px;background:#e8f5e9;border-radius:12px;padding:2px 8px;font-size:11px;color:#43a047;font-weight:600}
 </style>
 </head>
 <body>
 
+<!-- ══════ FLOATING ANIMALS ══════ -->
+<div class="floating-animals" id="floatAnimals"></div>
+
 <!-- ══════ AUTH SCREEN ══════ -->
 <div id="authScreen">
-  <div class="logo">🐕</div>
-  <h2>莊敬商科</h2>
-  <p>老師減肥大作戰 💪</p>
-  <div class="auth-card" id="loginForm">
-    <input id="loginName" placeholder="請輸入你的大名" autocomplete="off">
-    <button class="btn-primary" onclick="login()">🚀 進入戰場</button>
-    <div class="hint">還沒有資料？輸入名字就會自動註冊囉～</div>
-  </div>
-  <div class="auth-card hide" id="registerForm">
-    <div class="start-row">
-      <input id="regName" placeholder="你的大名" autocomplete="off">
+  <div class="auth-inner">
+    <div class="entrance-parade" id="authParade">🐕🐱🐰🐼🦊🐻🐯🦁🐸🐧🦄🐘🦋🐳🐹🦝🐮🐷🐨🦉</div>
+    <div class="logo">🐾</div>
+    <h2>莊敬動物園</h2>
+    <div class="subtitle">老師減肥大作戰！選一隻動物代表你吧～🐾</div>
+    
+    <!-- Login -->
+    <div class="auth-card" id="loginForm">
+      <input id="loginName" placeholder="請輸入你的大名" autocomplete="off">
+      <button class="btn-primary" onclick="login()">🚀 進入動物園</button>
+      <div class="hint">還沒有資料？輸入名字就會自動註冊囉～</div>
     </div>
-    <div class="start-row">
-      <input id="regStart" type="number" step="0.1" placeholder="起始體重 (kg)">
-      <input id="regTarget" type="number" step="0.1" placeholder="目標體重 (kg)">
+    
+    <!-- Register -->
+    <div class="auth-card hide" id="registerForm">
+      <div class="start-row">
+        <input id="regName" placeholder="你的大名" autocomplete="off" readonly>
+      </div>
+      <div class="animal-picker-title">🐾 選一隻動物代表你！</div>
+      <div class="animal-grid" id="animalPicker"></div>
+      <div class="start-row">
+        <input id="regStart" type="number" step="0.1" placeholder="起始體重 (kg)">
+        <input id="regTarget" type="number" step="0.1" placeholder="目標體重 (kg)">
+      </div>
+      <div class="start-row">
+        <input id="regHeight" type="number" placeholder="身高 (cm)">
+      </div>
+      <button class="btn-primary" onclick="register()">🎉 準備好了！開始減肥！</button>
+      <div class="hint" style="cursor:pointer;color:#66bb6a" onclick="showLogin()">← 已有帳號？直接登入</div>
     </div>
-    <div class="start-row">
-      <input id="regHeight" type="number" placeholder="身高 (cm)">
-    </div>
-    <button class="btn-primary" onclick="register()">🎉 準備好了！開始減肥！</button>
-    <div class="hint" style="cursor:pointer;color:#ff9a9e" onclick="showLogin()">← 已有帳號？直接登入</div>
   </div>
 </div>
 
@@ -156,22 +197,22 @@ body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient
 
   <!-- Top Bar -->
   <div id="topBar">
-    <span class="logo">🐕</span>
-    <h1>莊敬減肥比賽</h1>
-    <span class="user-badge" id="userBadge">老師</span>
+    <span class="user-animal" id="topAnimal">🐕</span>
+    <h1>🏡 動物園減肥大賽</h1>
+    <span class="user-badge" id="userBadge"><span id="userAnimalMini">🐕</span> <span id="userNameDisplay">老師</span></span>
   </div>
 
-  <!-- ══ Shiba Message ══ -->
-  <div id="shibaMsg" class="shiba-msg" style="margin:12px 16px 0">
-    <span class="shiba-icon">🐕</span>
-    <div class="msg-text" id="shibaText">汪！今天也要一起加油喔～</div>
+  <!-- ══ Animal Message ══ -->
+  <div id="animalMsg" class="animal-msg" style="margin:10px 14px 0">
+    <span class="animal-icon" id="msgAnimalIcon">🐕</span>
+    <div class="msg-text" id="animalMsgText">汪！今天也要一起加油喔～</div>
   </div>
 
   <!-- ══ PAGES ══ -->
 
   <!-- Dashboard -->
   <div class="page active" id="pageDashboard">
-    <div class="page-title">📊 我的儀表板</div>
+    <div class="page-title"><span id="dashAnimal">🐕</span> 我的儀表板</div>
     <div class="card">
       <div class="card-title">⚖️ 體重概況</div>
       <div class="stat-row">
@@ -181,8 +222,8 @@ body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient
       </div>
       <div class="stat-row">
         <div class="stat-box"><span class="num" id="dLost">-</span><span class="label">已減重量</span></div>
-        <div class="stat-box"><span class="num" id="dPercent">-</span><span class="label">減重百分比</span></div>
-        <div class="stat-box"><span class="num" id="dRemain">-</span><span class="label">離目標還有</span></div>
+        <div class="stat-box"><span class="num" id="dPercent">-</span><span class="label">減重%</span></div>
+        <div class="stat-box"><span class="num" id="dRemain">-</span><span class="label">離目標</span></div>
       </div>
     </div>
     <div class="card">
@@ -190,7 +231,7 @@ body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient
       <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">👣 本週步數</div>
+      <div class="card-title">👣 本週步數 <span class="animal-tag" id="stepAnimalTag">🐕 小柴監測中</span></div>
       <div class="stat-row">
         <div class="stat-box"><span class="num" id="dStepsToday">-</span><span class="label">今日</span></div>
         <div class="stat-box"><span class="num" id="dStepsWeek">-</span><span class="label">本週平均</span></div>
@@ -198,7 +239,7 @@ body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient
       </div>
     </div>
     <div class="card">
-      <div class="card-title">🏅 徽章收集 <span id="badgeCount" style="font-size:12px;color:#999"></span></div>
+      <div class="card-title">🏅 徽章收集 <span id="badgeCount" style="font-size:11px;color:#999"></span></div>
       <div class="badge-grid" id="miniBadges"></div>
     </div>
   </div>
@@ -207,8 +248,8 @@ body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient
   <div class="page" id="pageSteps">
     <div class="page-title">👣 每日步數</div>
     <div class="card">
-      <div class="shiba-msg" style="margin-bottom:12px">
-        <span class="shiba-icon">🐕</span>
+      <div class="animal-msg" style="margin-bottom:10px">
+        <span class="animal-icon" id="stepsAnimalIcon">🐕</span>
         <div class="msg-text">從手機的健康 App 看一下今天的步數，填進來吧！</div>
       </div>
       <div class="input-group">
@@ -219,7 +260,7 @@ body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient
         <label>👣 今日步數</label>
         <input type="number" id="stepCount" placeholder="例如 8420" min="0">
       </div>
-      <button class="btn btn-pink" onclick="saveSteps()">✅ 記錄步數</button>
+      <button class="btn btn-green" onclick="saveSteps()">✅ 記錄步數</button>
     </div>
     <div class="card">
       <div class="card-title">📋 最近記錄</div>
@@ -235,9 +276,9 @@ body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient
   <div class="page" id="pageWeight">
     <div class="page-title">⚖️ 每週體重</div>
     <div class="card">
-      <div class="shiba-msg" style="margin-bottom:12px">
-        <span class="shiba-icon">🐕</span>
-        <div class="msg-text">每週日量一次體重，誠實記錄才能看到進步喔！</div>
+      <div class="animal-msg" style="margin-bottom:10px">
+        <span class="animal-icon" id="weightAnimalIcon">🐻</span>
+        <div class="msg-text">每週日量一次體重，誠實記錄才能看到進步喔！熊熊在看著你～</div>
       </div>
       <div class="input-group">
         <label>📅 週次</label>
@@ -247,7 +288,7 @@ body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient
         <label>⚖️ 體重 (kg)</label>
         <input type="number" id="weightVal" step="0.1" placeholder="例如 72.5" min="20" max="200">
       </div>
-      <button class="btn btn-pink" onclick="saveWeight()">✅ 記錄體重</button>
+      <button class="btn btn-green" onclick="saveWeight()">✅ 記錄體重</button>
     </div>
     <div class="card">
       <div class="card-title">📋 體重記錄</div>
@@ -257,26 +298,26 @@ body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient
 
   <!-- Leaderboard -->
   <div class="page" id="pageRank">
-    <div class="page-title">🏆 每週排行榜</div>
+    <div class="page-title">🏆 動物園排行榜</div>
     <div class="week-select" id="rankWeekSelect"></div>
     <div id="rankList"></div>
   </div>
 
   <!-- Map -->
   <div class="page" id="pageMap">
-    <div class="page-title">🗺️ 環島步行地圖</div>
+    <div class="page-title">🗺️ 動物環島地圖</div>
     <div class="card">
-      <div class="card-title">📍 台北 → 高雄</div>
+      <div class="card-title">📍 動物大遷徙：台北 → 高雄</div>
       <div class="map-container">
         <div class="map-path" id="mapPath"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:#999">
-        <span>🚩 台北</span>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#666">
+        <span>🚩 台北 🐕🦊</span>
         <span id="mapProgress">0%</span>
-        <span>🏁 高雄</span>
+        <span>🏁 高雄 🦁🐯</span>
       </div>
-      <div style="margin-top:8px;text-align:center;font-size:13px;color:#666" id="mapDetail">
-        🚶 還需要走 450,000 步才能到高雄！
+      <div style="margin-top:6px;text-align:center;font-size:12px;color:#555" id="mapDetail">
+        🐾 動物們還需要走 450,000 步才能到高雄！
       </div>
     </div>
     <div class="card">
@@ -287,26 +328,26 @@ body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient
 
   <!-- Badges -->
   <div class="page" id="pageBadge">
-    <div class="page-title">🏅 成就徽章</div>
+    <div class="page-title">🏅 動物徽章收集</div>
     <div class="badge-grid" id="badgeGrid"></div>
-    <div class="card" style="margin-top:12px">
+    <div class="card" style="margin-top:10px">
       <div class="card-title">📊 收集進度</div>
-      <div style="background:#f0f0f0;border-radius:10px;height:20px;overflow:hidden">
-        <div id="badgeProgress" style="height:100%;background:linear-gradient(90deg,#ff9a9e,#fad0c4);border-radius:10px;transition:0.5s;width:0%"></div>
+      <div style="background:#e8f5e9;border-radius:10px;height:18px;overflow:hidden">
+        <div id="badgeProgress" style="height:100%;background:linear-gradient(90deg,#a5d6a7,#43a047);border-radius:10px;transition:0.5s;width:0%"></div>
       </div>
-      <div style="text-align:center;font-size:12px;color:#999;margin-top:4px" id="badgeProgressText">0 / 0</div>
+      <div style="text-align:center;font-size:11px;color:#999;margin-top:3px" id="badgeProgressText">0 / 0</div>
     </div>
   </div>
 
   <!-- Challenges -->
   <div class="page" id="pageChallenge">
-    <div class="page-title">🔥 每週挑戰</div>
+    <div class="page-title">🔥 動物挑戰</div>
     <div id="challengeList"></div>
-    <div class="card" style="margin-top:12px">
+    <div class="card" style="margin-top:10px">
       <div class="card-title">📋 挑戰積分</div>
-      <div style="text-align:center;padding:12px">
-        <span style="font-size:36px;font-weight:900;color:#ff9a9e" id="challengeScore">0</span>
-        <span style="font-size:14px;color:#999"> 分</span>
+      <div style="text-align:center;padding:10px">
+        <span style="font-size:32px;font-weight:900;color:#43a047" id="challengeScore">0</span>
+        <span style="font-size:13px;color:#999"> 分 🐾</span>
       </div>
     </div>
   </div>
@@ -339,6 +380,30 @@ body{font-family:'Segoe UI','Noto Sans TC',sans-serif;background:linear-gradient
 </div>
 
 <script>
+// ═══════════ ALL ANIMALS ═══════════
+const ALL_ANIMALS = [
+  {emoji:'🐕', name:'柴犬', msg:['汪！今天也要一起加油喔～','柴柴陪你每一步！','汪～走起來！']},
+  {emoji:'🐱', name:'貓咪', msg:['喵～慢慢來也可以啦','懶懶地瘦也不錯喵','喵喵～你走了幾步？']},
+  {emoji:'🐰', name:'兔子', msg:['蹦蹦跳跳最健康！','跳起來！兔子式減肥','今天的步數跳了嗎？']},
+  {emoji:'🐼', name:'熊貓', msg:['慢慢吃竹子和減肥不衝突喔','熊貓式慢活減重法','圓圓的也很可愛啦～']},
+  {emoji:'🦊', name:'狐狸', msg:['聰明減重才是王道！','狡猾地偷偷瘦下來','狐狸的小秘訣：多走路！']},
+  {emoji:'🐻', name:'熊熊', msg:['冬眠完再減…不行！','熊熊陪你一起走','好想睡覺…但還是要走']},
+  {emoji:'🐯', name:'老虎', msg:['吼～跑起來！','森林之王不走誰走！','霸氣減重！吼！']},
+  {emoji:'🦁', name:'獅子', msg:['草原之王也要減肥','吼～運動最帥了','王者風範！每天多走點']},
+  {emoji:'🐸', name:'青蛙', msg:['呱～跳起來！','今天也是呱呱叫的一天','快樂地跳躍吧！']},
+  {emoji:'🐧', name:'企鵝', msg:['搖搖擺擺也很努力','南極來的減重達人','一步一步慢慢走']},
+  {emoji:'🦄', name:'獨角獸', msg:['夢幻減重之旅～','彩虹色的每一步','獨一無二的你！']},
+  {emoji:'🐘', name:'大象', msg:['噠噠噠～大步走','穩重地減重最持久','一步抵別人三步！']},
+  {emoji:'🦋', name:'蝴蝶', msg:['輕盈地飛向目標','蛻變後更美的自己','每一天都在變美麗']},
+  {emoji:'🐳', name:'鯨魚', msg:['噗～噴水加油！','大海中自由遨遊','慢慢游也能到遠方']},
+  {emoji:'🐹', name:'倉鼠', msg:['吱吱～跑轉輪最在行','倉鼠精神！一直跑！','小小步累積大大能量']},
+  {emoji:'🦝', name:'浣熊', msg:['洗洗東西順便運動','圓滾滾的也要動起來','偷偷告訴你：多走路有用']},
+  {emoji:'🐮', name:'乳牛', msg:['哞～吃草最健康','哞哞叫！今天動了沒？','牛奶喝再多也要運動']},
+  {emoji:'🐷', name:'小豬', msg:['哼哼～人家也在減肥','吃飽才有力氣走！','小豬也是潛力股！']},
+  {emoji:'🐨', name:'無尾熊', msg:['慢慢來～抱著樹喘口氣','今天也努力動了一點','一步一步慢慢進步']},
+  {emoji:'🦉', name:'貓頭鷹', msg:['咕咕～夜間散步也不錯','智慧型減重！','晚上走走路也很棒']},
+];
+
 // ═══════════ CONFIG ═══════════
 const API = '/wl/api';
 const WEEKDAYS = ['日','一','二','三','四','五','六'];
@@ -373,16 +438,13 @@ const CHALLENGES = [
 ];
 
 const MOTIVATIONS = [
-  '汪！今天也要一起加油喔～',
-  '瘦一點，健康多一點！🐕',
-  '每天多走1000步，一年瘦5公斤！',
-  '減肥不是為了別人，是為了更好的自己 💪',
-  '小柴子陪你一起變健康！',
-  '羅馬不是一天造成的，肥肉也是…慢慢來！😂',
-  '今天走了幾步？快來記錄吧～',
-  '管住嘴、邁開腿，明天更美好！',
-  '每減一公斤，都是對自己的承諾 ✨',
-  '吃飽了才有力氣減肥！汪！',
+  '汪！今天也要一起加油喔～','瘦一點，健康多一點！🐾',
+  '每天多走1000步，一年瘦5公斤！','減肥不是為了別人，是為了更好的自己 💪',
+  '動物園的大家陪你一起變健康！','羅馬不是一天造成的，肥肉也是…慢慢來！😂',
+  '今天走了幾步？快來記錄吧～','管住嘴、邁開腿，明天更美好！',
+  '每減一公斤，都是對自己的承諾 ✨','吃飽了才有力氣減肥！',
+  '動物園的老師們～一起加油！','🐘 大象說：噠噠噠～大步走！',
+  '🐱 貓咪說：喵～慢慢來也可以','🦊 狐狸說：偷偷變瘦最聰明',
 ];
 
 // ═══════════ STATE ═══════════
@@ -394,6 +456,45 @@ let badgesData = {};
 let challengeData = {};
 let weightChart = null;
 let stepsChart = null;
+let _selectedAnimal = null;
+
+// ═══════════ INIT ═══════════
+function init() {
+  // Build animal picker
+  const grid = document.getElementById('animalPicker');
+  grid.innerHTML = ALL_ANIMALS.map(a => 
+    `<div class="animal-opt" data-emoji="${a.emoji}" onclick="selectAnimal('${a.emoji}')">
+      <span class="emoji">${a.emoji}</span>
+      <span class="name">${a.name}</span>
+    </div>`
+  ).join('');
+  
+  // Spawn floating animals
+  spawnFloatingAnimals();
+}
+init();
+
+function spawnFloatingAnimals() {
+  const container = document.getElementById('floatAnimals');
+  const pool = ['🐕','🐱','🐰','🐼','🦊','🐻','🐯','🦁','🐸','🐧','🦄','🐘','🦋','🐳','🐹','🦝','🐮','🐷','🐨','🦉'];
+  for(let i=0;i<12;i++){
+    const el = document.createElement('div');
+    el.className = 'float-animal';
+    el.textContent = pool[Math.floor(Math.random()*pool.length)];
+    el.style.left = Math.random()*90+5+'%';
+    el.style.animationDuration = (15+Math.random()*25)+'s';
+    el.style.animationDelay = Math.random()*20+'s';
+    el.style.fontSize = (16+Math.random()*20)+'px';
+    container.appendChild(el);
+  }
+}
+
+function selectAnimal(emoji) {
+  _selectedAnimal = emoji;
+  document.querySelectorAll('.animal-opt').forEach(o => {
+    o.classList.toggle('selected', o.dataset.emoji === emoji);
+  });
+}
 
 // ═══════════ API ═══════════
 async function api(path, data) {
@@ -401,6 +502,10 @@ async function api(path, data) {
   if(data) opt.method='POST', opt.body=JSON.stringify(data);
   const r = await fetch(API+path, opt);
   return r.json();
+}
+
+function getAnimalInfo(emoji) {
+  return ALL_ANIMALS.find(a => a.emoji === emoji) || ALL_ANIMALS[0];
 }
 
 // ═══════════ AUTH ═══════════
@@ -416,6 +521,9 @@ async function login() {
     document.getElementById('regName').value = name;
     document.getElementById('loginForm').classList.add('hide');
     document.getElementById('registerForm').classList.remove('hide');
+    // Auto-select random animal
+    const rand = ALL_ANIMALS[Math.floor(Math.random()*ALL_ANIMALS.length)];
+    selectAnimal(rand.emoji);
   } else {
     toast(res.error || '登入失敗');
   }
@@ -431,8 +539,9 @@ async function register() {
   const start = parseFloat(document.getElementById('regStart').value);
   const target = parseFloat(document.getElementById('regTarget').value);
   const height = parseInt(document.getElementById('regHeight').value) || 0;
+  const animal = _selectedAnimal || '🐕';
   if(!name||!start||!target) return toast('請填寫完整資料～');
-  const res = await api('/register', {name,start_weight:start,target_weight:target,height});
+  const res = await api('/register', {name,start_weight:start,target_weight:target,height,animal});
   if(res.ok) {
     currentUser = res.user;
     enterApp();
@@ -445,8 +554,19 @@ function enterApp() {
   document.getElementById('authScreen').classList.add('hide');
   document.getElementById('appMain').classList.remove('hide');
   document.getElementById('bottomNav').classList.remove('hide');
-  document.getElementById('userBadge').textContent = currentUser.name;
+  applyUserAnimal();
   loadAll();
+}
+
+function applyUserAnimal() {
+  if(!currentUser) return;
+  const a = currentUser.animal || '🐕';
+  document.getElementById('topAnimal').textContent = a;
+  document.getElementById('userAnimalMini').textContent = a;
+  document.getElementById('userNameDisplay').textContent = currentUser.name;
+  document.getElementById('dashAnimal').textContent = a;
+  document.getElementById('msgAnimalIcon').textContent = a;
+  document.getElementById('stepsAnimalIcon').textContent = a;
 }
 
 // ═══════════ LOAD DATA ═══════════
@@ -466,7 +586,7 @@ async function loadAll() {
   if(cRes.ok) challengeData = cRes;
   if(lRes.ok) window._leaderboard = lRes.ranking||[];
   
-  setShibaMsg();
+  setAnimalMsg();
   updateDashboard();
   updateStepsPage();
   updateWeightPage();
@@ -476,10 +596,16 @@ async function loadAll() {
   updateChallenges();
 }
 
-function setShibaMsg() {
-  const msgs = MOTIVATIONS;
+function getUserAnimal(uid) {
+  const u = users.find(x=>x.id==uid);
+  return u ? (u.animal||'🐕') : '🐕';
+}
+
+function setAnimalMsg() {
+  const a = currentUser ? getAnimalInfo(currentUser.animal||'🐕') : ALL_ANIMALS[0];
+  const msgs = a.msg || MOTIVATIONS;
   const idx = Math.floor(Math.random() * msgs.length);
-  document.getElementById('shibaText').textContent = msgs[idx];
+  document.getElementById('animalMsgText').textContent = msgs[idx];
 }
 
 // ═══════════ PAGES ═══════════
@@ -508,6 +634,7 @@ function updateDashboard() {
   const pct = startW>0 ? (lost/startW*100) : 0;
   const remain = curW - targetW;
   
+  const a = u.animal || '🐕';
   document.getElementById('dStart').textContent = startW+'kg';
   document.getElementById('dCurrent').textContent = curW.toFixed(1)+'kg';
   document.getElementById('dTarget').textContent = targetW+'kg';
@@ -527,12 +654,16 @@ function updateDashboard() {
   document.getElementById('dStepsToday').textContent = todayS.toLocaleString();
   document.getElementById('dStepsWeek').textContent = weekAvg.toLocaleString();
   document.getElementById('dStepsBest').textContent = weekMax.toLocaleString();
+  
+  // Animal tag for steps
+  const randAnimal = ALL_ANIMALS[Math.floor(Math.random()*ALL_ANIMALS.length)];
+  document.getElementById('stepAnimalTag').textContent = randAnimal.emoji+' '+randAnimal.name+'監測中';
 
   // Mini badges
   const earned = Object.keys(badgesData).filter(k=>badgesData[k]);
   document.getElementById('badgeCount').textContent = `(${earned.length}/${ALL_BADGES.length})`;
   const grid = document.getElementById('miniBadges');
-  grid.innerHTML = ALL_BADGES.slice(0,6).map(b => {
+  grid.innerHTML = ALL_BADGES.slice(0,8).map(b => {
     const got = earned.includes(b.id);
     return `<div class="badge-item ${got?'unlocked':'locked'}">
       <span class="badge-icon">${got?b.icon:'🔒'}</span>
@@ -540,7 +671,6 @@ function updateDashboard() {
     </div>`;
   }).join('');
 
-  // Weight chart
   drawWeightChart();
 }
 
@@ -566,16 +696,16 @@ function drawWeightChart() {
     data:{
       labels: allLabels,
       datasets: [
-        {label:'體重', data:allVals, borderColor:'#ff9a9e', backgroundColor:'rgba(255,154,158,0.1)', fill:true, tension:0.3, pointRadius:4, pointBackgroundColor:'#ff9a9e'},
-        {label:'目標', data:Array(allLabels.length).fill(targetW), borderColor:'#4caf50', borderDash:[5,5], pointRadius:0, borderWidth:2}
+        {label:'體重', data:allVals, borderColor:'#43a047', backgroundColor:'rgba(67,160,71,0.08)', fill:true, tension:0.3, pointRadius:4, pointBackgroundColor:'#43a047'},
+        {label:'目標', data:Array(allLabels.length).fill(targetW), borderColor:'#ff9800', borderDash:[5,5], pointRadius:0, borderWidth:2}
       ]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}},
       scales:{
-        y:{grid:{color:'rgba(0,0,0,0.05)'}, ticks:{font:{size:10}}},
-        x:{grid:{display:false}, ticks:{font:{size:10}}}
+        y:{grid:{color:'rgba(0,0,0,0.04)'}, ticks:{font:{size:10}}},
+        x:{grid:{display:false}, ticks:{font:{size:9}}}
       }
     }
   });
@@ -593,17 +723,17 @@ function updateStepsPage() {
 function renderRecentSteps() {
   const entries = Object.entries(stepsData).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,7);
   const html = entries.length===0
-    ? '<div style="text-align:center;padding:12px;color:#999">還沒有步數記錄～</div>'
+    ? '<div style="text-align:center;padding:10px;color:#999">還沒有步數記錄～找你的動物夥伴一起走吧！</div>'
     : entries.map(([date,val])=>{
       const d = new Date(date+'T00:00:00');
       const label = (d.getMonth()+1)+'/'+d.getDate()+' ('+WEEKDAYS[d.getDay()]+')';
       const barW = Math.min(100, val/200);
-      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:13px">
-        <span style="width:70px;color:#999">${label}</span>
-        <div style="flex:1;height:16px;background:#f0f0f0;border-radius:8px;overflow:hidden">
-          <div style="width:${barW}%;height:100%;background:linear-gradient(90deg,#ff9a9e,#fad0c4);border-radius:8px"></div>
+      return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:12px">
+        <span style="width:65px;color:#999">${label}</span>
+        <div style="flex:1;height:14px;background:#e8f5e9;border-radius:7px;overflow:hidden">
+          <div style="width:${barW}%;height:100%;background:linear-gradient(90deg,#81c784,#43a047);border-radius:7px;transition:0.3s"></div>
         </div>
-        <span style="width:60px;text-align:right;font-weight:700;color:#666">${val.toLocaleString()}</span>
+        <span style="width:55px;text-align:right;font-weight:700;color:#555">${val.toLocaleString()}</span>
       </div>`;
     }).join('');
   document.getElementById('recentSteps').innerHTML = html;
@@ -623,14 +753,14 @@ function drawStepsChart() {
     type:'bar',
     data:{
       labels,
-      datasets:[{label:'步數', data:vals, backgroundColor:'rgba(255,154,158,0.6)', borderRadius:4, borderSkipped:false}]
+      datasets:[{label:'步數', data:vals, backgroundColor:'rgba(67,160,71,0.55)', borderRadius:4, borderSkipped:false}]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}},
       scales:{
-        y:{grid:{color:'rgba(0,0,0,0.05)'}, ticks:{font:{size:10}}},
-        x:{grid:{display:false}, ticks:{font:{size:9}}}
+        y:{grid:{color:'rgba(0,0,0,0.04)'}, ticks:{font:{size:10}}},
+        x:{grid:{display:false}, ticks:{font:{size:8}}}
       }
     }
   });
@@ -643,10 +773,10 @@ async function saveSteps() {
   const res = await api('/steps', {user_id:currentUser.id, date, steps:val});
   if(res.ok) {
     stepsData = res.steps||{};
-    toast('✅ 步數已記錄！ ('+val.toLocaleString()+' 步)');
+    const a = currentUser.animal||'🐕';
+    toast('✅ '+a+' 記錄成功！ ('+val.toLocaleString()+' 步)');
     updateStepsPage();
     updateDashboard();
-    // Check badge
     checkBadges();
   } else {
     toast(res.error || '記錄失敗');
@@ -677,10 +807,10 @@ function updateWeightPage() {
 function renderWeightHistory() {
   const entries = Object.entries(weightsData).filter(([k,v])=>v>0).sort((a,b)=>b[0].localeCompare(a[0]));
   const html = entries.length===0
-    ? '<div style="text-align:center;padding:12px;color:#999">還沒有體重記錄～</div>'
+    ? '<div style="text-align:center;padding:10px;color:#999">還沒有體重記錄～讓動物們幫你加油！</div>'
     : entries.map(([week,v])=>{
       const [y,w] = week.split('-W');
-      return `<div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:14px">
+      return `<div style="display:flex;align-items:center;padding:6px 0;border-bottom:1px solid #e8f5e9;font-size:13px">
         <span style="flex:1;color:#999">${y} 第${w}週</span>
         <span style="font-weight:800;color:#333">${v.toFixed(1)} kg</span>
       </div>`;
@@ -711,7 +841,6 @@ function updateLeaderboard() {
   const curWeek = getWeekNumber(now);
   const year = now.getFullYear();
   
-  // Week selector
   const sel = document.getElementById('rankWeekSelect');
   sel.innerHTML = '';
   for(let i=0;i<8;i++){
@@ -725,7 +854,6 @@ function updateLeaderboard() {
     sel.appendChild(btn);
   }
   
-  // Render current week
   renderRanking(year+'-W'+String(curWeek).padStart(2,'0'), sel);
 }
 
@@ -736,15 +864,17 @@ async function renderRanking(weekKey, sel) {
   const rank = res.ranking||[];
   const container = document.getElementById('rankList');
   if(rank.length===0){
-    container.innerHTML = '<div style="text-align:center;padding:24px;color:#999">這週還沒有資料～</div>';
+    container.innerHTML = '<div style="text-align:center;padding:24px;color:#999">這週還沒有資料～動物們還在睡覺 🐻💤</div>';
     return;
   }
   container.innerHTML = rank.map((r,i)=>{
     const cls = i===0?'top1':i===1?'top2':i===2?'top3':'';
     const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    const animal = getUserAnimal(r.id);
     const lostStr = r.lost>0 ? '-'+r.lost.toFixed(1)+'kg' : '0kg';
     return `<div class="rank-item ${cls}">
       <div class="rank-num">${medal}</div>
+      <div class="rank-animal">${animal}</div>
       <div class="rank-name">${r.name}</div>
       <div class="rank-data">
         <div class="val">${lostStr}</div>
@@ -761,21 +891,17 @@ function updateMap() {
   document.getElementById('mapProgress').textContent = Math.round(pct)+'%';
   
   let currentCity = CITIES[0];
-  let nextCity = CITIES[1];
   for(let i=0;i<CITIES.length;i++){
-    if(total >= CITIES[i].step){
-      currentCity = CITIES[i];
-      nextCity = CITIES[i+1] || CITIES[i];
-    }
+    if(total >= CITIES[i].step) currentCity = CITIES[i];
   }
   
   const remain = Math.max(0, TOTAL_MAP_STEPS - total);
+  const a = currentUser ? (currentUser.animal||'🐕') : '🐕';
   document.getElementById('mapDetail').textContent = 
     remain > 0 
-      ? `📍 目前在 ${currentCity.name}，還需要 ${remain.toLocaleString()} 步才能到高雄！`
-      : '🎉 已經到高雄了！可以挑戰第二圈～';
+      ? `📍 ${a} 目前在 ${currentCity.name}，還需要 ${remain.toLocaleString()} 步到高雄！`
+      : '🎉 已經到高雄了！動物大遷徙成功！';
   
-  // Draw map dots
   const mapEl = document.getElementById('mapPath');
   mapEl.innerHTML = CITIES.map((city,i)=>{
     const x = 5 + (i/(CITIES.length-1))*90;
@@ -785,15 +911,10 @@ function updateMap() {
     const isVisited = total >= city.step;
     return `<div class="map-dot ${isVisited?'visited':''} ${isCurrent?'current':''}" 
       style="left:${x}%;top:${y}%"></div>
-      <div class="map-label" style="left:${x}%;top:${y+12}%">${city.name}</div>`;
+      <div class="map-label" style="left:${x}%;top:${y+11}%">${city.name}</div>`;
   }).join('');
   
-  // Check halfway badge
-  if(total >= CITIES[4].step) {
-    earnBadge('halfway');
-  }
-  
-  // Check walking badges
+  if(total >= CITIES[4].step) earnBadge('halfway');
   if(total >= 20000) earnBadge('sprinter');
 }
 
@@ -806,7 +927,7 @@ function updateBadges() {
     return `<div class="badge-item ${got?'unlocked':'locked'}">
       <span class="badge-icon">${got?b.icon:'🔒'}</span>
       <div class="badge-name">${got?b.name:'???'}</div>
-      <div style="font-size:9px;color:#999;margin-top:2px">${got?b.desc:'尚未解鎖'}</div>
+      <div style="font-size:8px;color:#999;margin-top:1px">${got?b.desc:'尚未解鎖'}</div>
     </div>`;
   }).join('');
   
@@ -820,8 +941,7 @@ async function checkBadges() {
   const res = await api('/check-badges', {user_id:currentUser.id});
   if(res.ok && res.newBadge) {
     showConfetti();
-    toast('🎉 解鎖新徽章：'+res.badgeName+'！');
-    // Reload badges
+    toast('🎉 '+res.badgeName+' 徽章到手了！');
     const bRes = await api('/badges/'+currentUser.id);
     if(bRes.ok) badgesData = bRes.badges||{};
     updateBadges();
@@ -884,14 +1004,14 @@ function toast(msg) {
 function showConfetti() {
   const container = document.createElement('div');
   container.className = 'confetti-container';
-  const colors = ['#ff9a9e','#fad0c4','#ffd54f','#4caf50','#64b5f6','#ce93d8','#ff8a65'];
+  const colors = ['#43a047','#66bb6a','#a5d6a7','#ffd54f','#ff8a65','#64b5f6','#ce93d8','#fff176'];
   for(let i=0;i<40;i++){
     const el = document.createElement('div');
     el.className = 'confetti';
     el.style.left = Math.random()*100+'%';
     el.style.background = colors[Math.floor(Math.random()*colors.length)];
-    el.style.width = (6+Math.random()*8)+'px';
-    el.style.height = (6+Math.random()*8)+'px';
+    el.style.width = (5+Math.random()*8)+'px';
+    el.style.height = (5+Math.random()*8)+'px';
     el.style.borderRadius = Math.random()>0.5?'50%':'2px';
     el.style.animationDuration = (2+Math.random()*2)+'s';
     el.style.animationDelay = Math.random()*0.5+'s';
@@ -901,8 +1021,7 @@ function showConfetti() {
   setTimeout(()=>container.remove(), 4000);
 }
 
-// ═══════════ INIT ═══════════
-console.log('🐕 莊敬商科減肥比賽 App 載入完成！');
+console.log('🐾 莊敬動物園減肥大賽 App 載入完成！');
 </script>
 </body>
 </html>
