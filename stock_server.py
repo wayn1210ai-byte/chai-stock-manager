@@ -3,6 +3,7 @@
 import os, json, hashlib, threading, re, time, urllib.request, socket
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory, session
+from flask_cors import CORS
 from weight_loss_api import register_blueprint as register_wl
 
 PORT = int(os.environ.get('PORT', 8765))
