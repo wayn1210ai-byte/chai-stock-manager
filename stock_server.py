@@ -76,17 +76,17 @@ if DATABASE_URL:
                     created_at TIMESTAMP DEFAULT NOW()
                 )
             ''')
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS stock_data (
-                username TEXT NOT NULL,
-                data JSONB NOT NULL DEFAULT '{}'::jsonb,
-                updated_at TIMESTAMP DEFAULT NOW(),
-                PRIMARY KEY (username)
-            )
-        ''')
-        cur.close()
-        use_pg = True
-        print('✅ PostgreSQL 資料庫連線成功!')
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS stock_data (
+                    username TEXT NOT NULL,
+                    data JSONB NOT NULL DEFAULT '{}'::jsonb,
+                    updated_at TIMESTAMP DEFAULT NOW(),
+                    PRIMARY KEY (username)
+                )
+            ''')
+            cur.close()
+            use_pg = True
+            print('✅ PostgreSQL 資料庫連線成功!')
     except Exception as e:
         print(f'⚠️ PostgreSQL 連線失敗，使用 JSON 檔案模式: {e}')
         use_pg = False
@@ -116,7 +116,7 @@ def hash_pw(password):
 
 def db_load_users():
     """Load all users"""
-    if use_pg:
+    if use_pg and pg_conn is not None:
         cur = pg_conn.cursor()
         cur.execute('SELECT username, password FROM users')
         rows = cur.fetchall()
@@ -127,7 +127,7 @@ def db_load_users():
             return json.load(f)
 
 def db_save_users(users):
-    if use_pg:
+    if use_pg and pg_conn is not None:
         cur = pg_conn.cursor()
         for username, data in users.items():
             cur.execute(
@@ -141,7 +141,7 @@ def db_save_users(users):
 
 def db_load_data(username):
     """Load user stock data"""
-    if use_pg:
+    if use_pg and pg_conn is not None:
         cur = pg_conn.cursor()
         cur.execute('SELECT data FROM stock_data WHERE username = %s', (username,))
         row = cur.fetchone()
@@ -157,7 +157,7 @@ def db_load_data(username):
             return json.load(f)
 
 def db_save_data(username, data):
-    if use_pg:
+    if use_pg and pg_conn is not None:
         cur = pg_conn.cursor()
         cur.execute(
             'INSERT INTO stock_data (username, data, updated_at) VALUES (%s, %s, NOW()) '
